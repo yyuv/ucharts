@@ -1,0 +1,2300 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='global-property-'>/**
+</span> * Created by Jasion on 14/12/6.
+ */
+
+<span id='global-property-'>/**
+</span> * 可视化组件基础模块
+ */
+define(['require', '../uve/graphics', '../uve/animation', '../uve/behavior',
+    '../../lib/d3/d3'], function (require, graph, anima, behav) {
+
+    var _config = null;
+    var _util = null;
+    var _ready = null;
+
+<span id='UChartBase'>    /**
+</span>     * 可视化组件基础类
+     *
+     * @param container     容纳组件的容器或父组件
+     *
+     * @class
+     * @extends BaseObject
+     */
+    function UChartBase() {
+
+        this.init = function (container) {
+            UChartBase.prototype.init.call(this);
+
+            if (container instanceof Array) {
+                // is d3 selection
+                this.__container__ = container.node();
+            }
+            else {
+                this.__container__ = container;
+            }
+
+            this.__gc__ = null;
+            this.__option__ = null;             // 选项，随可视化组件不同选项内容则不同
+            this.__dataset__ = null;            // 数据集，暂时支持一个，看需要可扩展支持多个
+            this.__backMode__ = false;
+            this.__tooltip__ = null;
+            this.__layers__ = [];
+            this.__forceProperties__ = null;
+
+            // 设置默认属性
+            this.marginTop(10)
+                .marginBottom(10)
+                .marginLeft(13)
+                .marginRight(13);
+
+            this.palette([&quot;#393b79&quot;, &quot;#5254a3&quot;, &quot;#6b6ecf&quot;, &quot;#9c9ede&quot;, &quot;#637939&quot;, &quot;#8ca252&quot;, &quot;#b5cf6b&quot;, &quot;#cedb9c&quot;, &quot;#8c6d31&quot;, &quot;#bd9e39&quot;,
+                    &quot;#e7ba52&quot;, &quot;#e7cb94&quot;, &quot;#843c39&quot;, &quot;#ad494a&quot;, &quot;#d6616b&quot;, &quot;#e7969c&quot;, &quot;#7b4173&quot;, &quot;#a55194&quot;, &quot;#ce6dbd&quot;, &quot;#de9ed6&quot;]
+            );
+        };
+
+        //------------------------------------
+        // 图表公共属性
+
+<span id='UChartBase-method-styleClass'>        /**
+</span>         * 设置/获取样式类
+         */
+        this.styleClass = function (value) {
+            return this.attr(&quot;styleClass&quot;, value);
+        };
+
+<span id='UChartBase-method-palette'>        /**
+</span>         * 设置/获取调色板
+         *
+         * @param value     颜色数组，e,g,[&quot;#ff0000&quot;,&quot;red&quot;]
+         */
+        this.palette = function (value) {
+            return this.attr(&quot;palette&quot;, value);
+        };
+
+<span id='UChartBase-method-background'>        /**
+</span>         * 设置/获取背景
+         */
+        this.background = function (value) {
+            return this.attr(&quot;background&quot;, value);
+        };
+
+<span id='UChartBase-method-border'>        /**
+</span>         * 设置/获取边框类型
+         */
+        this.border = function (value) {
+            return this.attr(&quot;border&quot;, value);
+        };
+
+<span id='UChartBase-method-title'>        /**
+</span>         * 设置/获取标题
+         * @param value
+         */
+        this.title = function (value) {
+            return this.attr(&quot;title&quot;, value);
+        };
+
+<span id='UChartBase-method-tip'>        /**
+</span>         * 设置/获取提示框属性
+         */
+        this.tip = function (value) {
+            return this.attr(&quot;tip&quot;, value);
+        };
+
+<span id='UChartBase-method-link'>        /**
+</span>         * 设置/获取超链接，支持{$CATEGORY}、{$VALUE}等内置变量
+         */
+        this.link = function (value) {
+            return this.attr(&quot;link&quot;, value);
+        };
+
+<span id='UChartBase-method-marginTop'>        /**
+</span>         * 图表上部空白
+         */
+        this.marginTop = function (value) {
+            return this.attr(&quot;marginTop&quot;, value);
+        };
+
+<span id='UChartBase-method-marginBottom'>        /**
+</span>         * 图表下部空白
+         */
+        this.marginBottom = function (value) {
+            return this.attr(&quot;marginBottom&quot;, value);
+        };
+
+<span id='UChartBase-method-marginLeft'>        /**
+</span>         * 图表左边空白
+         */
+        this.marginLeft = function (value) {
+            return this.attr(&quot;marginLeft&quot;, value);
+        };
+
+<span id='UChartBase-method-marginRight'>        /**
+</span>         * 图表右边空白
+         */
+        this.marginRight = function (value) {
+            return this.attr(&quot;marginRight&quot;, value);
+        };
+
+<span id='UChartBase-method-dataPlot'>        /**
+</span>         * 图表项属性，包括每个图表项的颜色、边框等
+         */
+        this.dataPlot = function (value) {
+            return this.attr(&quot;dataPlot&quot;, value);
+        };
+
+<span id='UChartBase-method-categoryColumn'>        /**
+</span>         * 图表分类/名称据列序号
+         */
+        this.categoryColumn = function (value) {
+            return this.attr(&quot;categoryColumn&quot;, value);
+        };
+
+<span id='UChartBase-method-valueColumn'>        /**
+</span>         * 图表的数值列序号
+         */
+        this.valueColumn = function (value) {
+            return this.attr(&quot;valueColumn&quot;, value);
+        };
+        //------------------------------------
+
+        function valueAccessor(value) {
+            /*if (value != null &amp;&amp; typeof value == &quot;object&quot;) {
+             // 属性值转换为函数
+             var allAttrs = Object.keys(value);
+             n = allAttrs.length;
+             for (i = 0; i &lt; n; i++) {
+             var name = allAttrs[i];
+             if (typeof value[name] !== &quot;function&quot;) {
+             value[name] = valueAccessor(value[name]);
+             }
+             }
+             }*/
+
+            var _value = value;
+            return function () {
+                return _value;
+            }
+        }
+
+<span id='UChartBase-method-forceProperty'>        /**
+</span>         * 强制设置属性值，不受主题影响
+         *
+         * @param name      属性名
+         * @param value     属性值
+         */
+        this.forceProperty = function (name, value) {
+            if (this.__forceProperties__ == null) {
+                this.__forceProperties__ = new d3.map();
+            }
+
+            this.__forceProperties__.set(name, value);
+            return this;
+        };
+
+<span id='UChartBase-method-property'>        /**
+</span>         * 获取指定名称的图表属性值，会自动搜索主题
+         *
+         * @param name          属性名称
+         * @param defaultValue  默认值
+         */
+        this.property = function (name, defaultValue, datum) {
+            // 1. 优先强制属性值
+            var value = this.__forceProperties__? this.__forceProperties__.get(name) : undefined;
+
+            // 2. 其次从主题获取
+            if (value === undefined) {
+                var theme = _config.theme();
+                if (theme) {
+                    // 存在主题，则先在主题按优先级别搜索属性设置
+                    var styleClass = this.styleClass();
+                    var typeName = this.type();
+                    var styleObj, styleObjs = [];
+
+                    if (styleClass) {
+                        styleObj = theme[typeName + &quot;$&quot; + styleClass];
+                        if (styleObj) {
+                            styleObjs.push(styleObj);
+                        }
+
+                        styleObj = theme[&quot;$&quot; + styleClass];
+                        if (styleObj) {
+                            styleObjs.push(styleObj);
+                        }
+                    }
+
+                    styleObj = theme[typeName];
+                    if (styleObj) {
+                        styleObjs.push(styleObj);
+                    }
+
+                    styleObj = theme[&quot;UChartBase&quot;];
+                    if (styleObj) {
+                        styleObjs.push(styleObj);
+                    }
+
+                    var i, n = styleObjs.length;
+                    if (name.indexOf(&quot;.&quot;) &lt; 0) {
+                        for (i = 0; i &lt; n; i++) {
+                            styleObj = styleObjs[i];
+                            value = styleObj[name];
+                            if (value !== undefined) {
+                                break;
+                            }
+                        }
+                    }
+                    else {
+                        var names = name.split(&quot;.&quot;);
+                        for (i = 0; i &lt; n; i++) {
+                            styleObj = styleObjs[i];
+                            var obj = styleObj[names[0]];
+                            if (obj != null) {
+                                for (var j = 1; j &lt; names.length; j++) {
+                                    obj = obj[names[j]];
+                                    if (j == names.length - 1) {
+                                        value = obj;
+                                        break;
+                                    }
+                                    if (obj == null) {
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (value !== undefined) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. 最后返回图表本身设置
+            if (value === undefined) {
+                if (name.indexOf(&quot;.&quot;) &lt; 0) {
+                    value = this.attr(name);
+                }
+                else {
+                    var names = name.split(&quot;.&quot;);
+                    var obj = this.attr(names[0]);
+                    if (obj != null) {
+                        for (var j = 1; j &lt; names.length; j++) {
+                            value = obj[names[j]];
+                            if (value == null) {
+                                break;
+                            }
+
+                            if (typeof value == &quot;function&quot;) {
+                                value = value.call(obj);
+                            }
+
+                            obj = value;
+                        }
+                    }
+                }
+            }
+
+            // 取默认值
+            if (value == null &amp;&amp; defaultValue != null) {
+                value = defaultValue;
+            }
+
+            // 计算值
+            if (value != null &amp;&amp; datum !== undefined) {
+                var type = typeof value;
+                if (type == &quot;function&quot;) {
+                    value = value.call(this);
+                }
+                else if (type == &quot;string&quot;) {
+                    value = this.processExpr(value, datum);
+                }
+            }
+
+            return value;
+        };
+
+<span id='UChartBase-method-option'>        /**
+</span>         * 组件选项
+         */
+        this.option = function (value) {
+            if (!arguments.length) {
+                return this.__option__;
+            }
+            else {
+                this.__option__ = value;
+                return this;
+            }
+        };
+
+<span id='UChartBase-method-dataset'>        /**
+</span>         * 设置/获取图表数据集
+         */
+        this.dataset = function (value) {
+            if (value === undefined) {
+                return this.__dataset__;
+            }
+            else {
+                this.__dataset__ = value;
+                return this;
+            }
+        };
+
+<span id='UChartBase-method-gc'>        /**
+</span>         * 获取/创建当前组件的绘图上下文
+         *
+         * @param reset 是否重置
+         */
+        this.gc = function (reset) {
+            if (reset &amp;&amp; this.__gc__ != null) {
+                this.__gc__.clearAll();
+            }
+            else if (reset &amp;&amp; this.__gc__ == null) {
+                var size = this.containerSize();
+                this.__gc__ = new graph.GraphicsContext(this.__container__, size[0], size[1]);
+            }
+
+            return this.__gc__;
+        };
+
+<span id='UChartBase-method-backgroundLayer'>        /**
+</span>         * 返回背景层
+         *
+         * @param autoCreate    如果背景层不存在，是否自动创建
+         */
+        this.backgroundLayer = function (autoCreate) {
+
+            return this.layer(&quot;bg&quot;, autoCreate, &quot;back&quot;);
+        };
+
+<span id='UChartBase-method-titleLayer'>        /**
+</span>         * 返回标题层
+         *
+         * @param autoCreate    如果标题层不存在，是否自动创建
+         */
+        this.titleLayer = function (autoCreate) {
+            var titleHeight = this.property(&quot;title.height&quot;, 0);
+            if (titleHeight == 0) {
+                var font = this.property(&quot;title.font&quot;);
+                if (font) {
+                    titleHeight = _util.valueOf(font.size, font);
+                    titleHeight += titleHeight / 2;
+                }
+            }
+
+            var titleLocation = this.property(&quot;title.location&quot;);
+            if (titleLocation &amp;&amp; titleLocation.indexOf(&quot;bottom&quot;) &gt;= 0) {
+                return this.layer(&quot;title&quot;, autoCreate, &quot;bottom&quot;, titleHeight);
+            }
+            else {
+                return this.layer(&quot;title&quot;, autoCreate, &quot;top&quot;, titleHeight);
+            }
+        };
+
+<span id='UChartBase-method-chartLayer'>        /**
+</span>         * 返回标题层
+         *
+         * @param autoCreate    如果标题层不存在，是否自动创建
+         * @param backMode      后台模式，用于后台渲染，通过
+         */
+        this.chartLayer = function (autoCreate) {
+            var backMode = this.backMode();
+            var id = backMode ? &quot;chart_back&quot; : &quot;chart&quot;;
+            var curChartLayer = this.layer(&quot;chart&quot;, false);
+            var chartLayer = this.layer(id, autoCreate, &quot;none&quot;, 0, curChartLayer);
+            if (backMode) {
+                chartLayer.opacity(0);
+            }
+
+            return chartLayer;
+        };
+
+<span id='UChartBase-method-backMode'>        /**
+</span>         * 是否后台模式，后台模式渲染不会马上显示出来，渲染完毕通过toForground显示出来，可应用动画
+         */
+        this.backMode = function (value) {
+            if (value === undefined) {
+                return this.__backMode__;
+            }
+            else {
+                this.__backMode__ = value;
+                return this;
+            }
+        };
+
+<span id='UChartBase-method-toForeground'>        /**
+</span>         * 将后台渲染的内容显示出来
+         *
+         * @param thansition    动画效果，支持：slideInLeft、slideInRight、slideOutRight，等
+         */
+        this.toForeground = function (thansition) {
+            if (this.backMode()) {
+                var chartLayer = this.chartLayer(false);
+                var parentLayer = chartLayer.group();
+                var translate = chartLayer.translate();
+                if (translate == null) {
+                    translate = [0, 0];
+                }
+                else if (typeof translate == &quot;string&quot;) {
+                    translate = translate.split(&quot;,&quot;);
+                    translate[0] = parseFloat(translate[0]);
+                    translate[1] = parseFloat(translate[1]);
+                }
+
+                var curChartLayer = this.layer(&quot;chart&quot;, false);
+                curChartLayer.id(&quot;chart_old&quot;);
+                chartLayer.id(&quot;chart&quot;);
+
+                var targetLayer = chartLayer;
+                var containerSize = this.containerSize();
+                if (thansition == &quot;slideInLeft&quot;) {
+                    var newTranslate = [translate[0] + containerSize[0], translate[1]];
+                    chartLayer.translate(newTranslate).opacity(1);
+                    parentLayer.sendToBack(curChartLayer, chartLayer);
+                    targetLayer = chartLayer;
+                }
+                else if (thansition == &quot;slideInRight&quot;) {
+                    var newTranslate = [translate[0] - containerSize[0], translate[1]];
+                    chartLayer.translate(newTranslate).opacity(1);
+                    parentLayer.sendToBack(curChartLayer, chartLayer);
+                    targetLayer = chartLayer;
+                }
+                else if (thansition == &quot;slideOutRight&quot;) {
+                    translate[0] += containerSize[0];
+                    chartLayer.opacity(1);
+                    targetLayer = curChartLayer;
+                }
+
+                var animation = new anima.Animation(&quot;linear&quot;, 500, {translate: translate})
+                    .transitionEnd(function () {
+                        curChartLayer.opacity(1);
+                        animation = new anima.Animation(&quot;linear&quot;, 500, {opacity: 0})
+                            .transitionEnd(function () {
+                                this.remove();
+                            });
+                        animation.toShapes(curChartLayer);
+                    });
+                animation.toShapes(targetLayer);
+
+                this.backMode(false);
+            }
+
+            return this;
+        };
+
+<span id='UChartBase-method-updateData'>        /**
+</span>         * 数据集数据变化后，调用此方法刷新可视化组件
+         */
+        this.updateData = function () {
+            // 由子类实现
+        };
+
+<span id='UChartBase-method-render'>        /**
+</span>         * 渲染输出
+         */
+        this.render = function () {
+            if (this.__container__) {
+                this.__layers__ = [];
+                this.gc(true);
+                this.renderBackground();
+                this.renderTitle();
+            }
+        };
+
+<span id='UChartBase-method-handleBehaviors'>        /**
+</span>         * 处理交互行为，基础类支持提示框、链接等交互操作
+         */
+        this.handleBehaviors = function () {
+            var chart = this;
+            var shapes = this.itemShapes();
+            var tip = chart.property(&quot;tip&quot;);
+            var link = chart.property(&quot;link&quot;);
+            if ((tip || link) &amp;&amp; shapes != null &amp;&amp; shapes.length &gt; 0) {
+                if (link) {
+                    shapes.forEach(function (shape) {
+                        shape.cursor(&quot;hand&quot;);
+                    });
+                }
+
+                var moving = 0, lastShape = null;
+                new behav.Touch()
+                    .moving(function () {
+                        moving++;
+                    })
+                    .moveIn(function (x, y) {
+                        chart.showTip(x, y, this.datum(), true);
+                    })
+                    .moveOut(function () {
+                        var tooltip = chart.tooltip(false);
+                        if (tooltip != null) {
+                            tooltip.hide();
+                        }
+                    })
+                    .click(function (x, y) {
+                        // 在移动端，无Tip，点击则执行Link；有Tip则显示Tip，再次点击才执行Link
+                        var tipHtml = chart.property(&quot;tip.html&quot;);
+                        if (tipHtml == null || tipHtml == &quot;&quot;) {
+                            chart.doLink(this);
+                        }
+                        else if (moving &lt; 3) {
+                            chart.showTip(x, y, this.datum(), false);
+                            moving = 3;
+                        }
+                        else if (moving &gt; 5 || (moving &gt;= 3 &amp;&amp; moving &lt;= 5 &amp;&amp; lastShape == this)) {
+                            var tooltip = chart.tooltip(false);
+                            if (tooltip != null) {
+                                tooltip.hide();
+                            }
+                            chart.doLink(this);
+                            moving = 0;
+                        }
+                        else {
+                            chart.showTip(x, y, this.datum(), false);
+                            moving = 3;
+                        }
+                        lastShape = this;
+                    })
+                    .toShapes(shapes);
+            }
+        };
+
+<span id='UChartBase-method-showTip'>        /**
+</span>         * 显示提示框
+         * @param x         提示框左上角位置x坐标
+         * @param y         提示框左上角位置y坐标
+         * @param datum     数据项，用于提示框内容的动态计算
+         * @param autoMode  是否自动模式（自动模式当鼠标移动等操作会自动消失）
+         */
+        this.showTip = function (x, y, datum, autoMode) {
+            var tipHtml = this.property(&quot;tip.html&quot;, null, datum);
+            if (tipHtml != null &amp;&amp; tipHtml != &quot;&quot;) {
+                var tooltip = this.tooltip(true);
+                tooltip.autoMode(autoMode)
+                    .html(tipHtml)
+                    .show(x + 13, y + 13);
+            }
+        };
+
+<span id='UChartBase-method-renderBackground'>        /**
+</span>         * 渲染背景
+         */
+        this.renderBackground = function () {
+            if (this.__container__ &amp;&amp; this.__gc__) {
+                var bgShape = null;
+                var bg = this.property(&quot;background&quot;);
+                if (bg != null) {
+                    var bgLayer = this.backgroundLayer(true);
+                    bgLayer.clearAll();
+                    var width = bgLayer.width(), height = bgLayer.height();
+                    bgShape = _util.applyBackgroundTo(bg, bgLayer, 0, 0, width, height);
+                }
+
+                var border = this.property(&quot;border&quot;);
+                if (border &amp;&amp; bgShape) {
+                    _util.applyBorderTo(border, bgShape);
+                }
+            }
+        };
+
+<span id='UChartBase-method-renderTitle'>        /**
+</span>         * 渲染标题
+         */
+        this.renderTitle = function () {
+            var titleText = this.property(&quot;title.text&quot;);
+            if (titleText) {
+                var titleLayer = this.titleLayer(true);
+                if (titleLayer) {
+                    titleLayer.clearAll();
+
+                    var textAnchor = &quot;middle&quot;;
+                    var location = this.property(&quot;title.location&quot;, &quot;top center&quot;);
+                    var x = titleLayer.width() / 2, y = titleLayer.height() / 2;
+                    if (location &amp;&amp; location.indexOf(&quot;left&quot;) &gt;= 0) {
+                        textAnchor = &quot;start&quot;;
+                        x = 2;
+                    }
+                    else if (location &amp;&amp; location.indexOf(&quot;right&quot;) &gt;= 0) {
+                        textAnchor = &quot;end&quot;;
+                        x = titleLayer.width() - 2;
+                    }
+
+                    var text = new graph.Text(x, y, titleText)
+                        .textAnchor(textAnchor)
+                        .dominantBaseline(&quot;middle&quot;);
+
+                    var font = this.property(&quot;title.font&quot;);
+                    if (font) {
+                        _util.applyFontTo(font, text);
+                    }
+
+                    titleLayer.addShape(text);
+                }
+            }
+        };
+
+<span id='UChartBase-method-type'>        /**
+</span>         * 获取图表类型名称
+         */
+        this.type = function () {
+            return this.constructor.name;
+        };
+
+<span id='UChartBase-method-container'>        /**
+</span>         * 获取/设置容器
+         */
+        this.container = function (container) {
+            if (container === undefined) {
+                return this.__container__;
+            }
+            else {
+                this.__container__ = container;
+                return this;
+            }
+        };
+
+<span id='UChartBase-method-containerSize'>        /**
+</span>         * 容器大小
+         */
+        this.containerSize = function () {
+            if (this.__container__) {
+                var width = parseInt(this.__container__.clientWidth),
+                    height = parseInt(this.__container__.clientHeight);
+                return [width, height];
+            }
+
+            return null;
+        };
+
+<span id='UChartBase-method-doLink'>        /**
+</span>         * 执行超链接
+         */
+        this.doLink = function (shape) {
+            var datum = shape? shape.datum() : null;
+            var link = this.property(&quot;link&quot;, null, datum);
+            if (link != null &amp;&amp; link != &quot;&quot;) {
+                window.location.href = link;
+            }
+        };
+
+        function findCount(source, target) {
+            var re = new RegExp(target, &quot;g&quot;);
+            var matchs = source.match(re);
+            return matchs ? matchs.length : 0;
+        }
+
+        function findExpr(source, from, isVariable) {
+            var start = source.indexOf(isVariable ? &quot;{$&quot; : &quot;{!&quot;, from);
+            if (start &lt; 0) {
+                return null;
+            }
+
+            var end = 0, pos = start, expr = null;
+            while ((pos = source.indexOf(&quot;}&quot;, pos + 1)) &gt; 0) {
+                expr = source.substring(start + 2, pos);
+                if (findCount(expr, &quot;{&quot;) == findCount(expr, &quot;}&quot;)) {
+                    end = pos;
+                    break;
+                }
+            }
+            if (end &lt;= 0) {
+                return null;
+            }
+
+            return {expr: expr, start: start, end: end};
+        }
+
+        function format(value, pattern) {
+            return _util.format(value, pattern);
+        }
+
+        this.bindDatumToDataset = function (datum, rowIndex) {
+            datum.dataRow = rowIndex;
+        };
+
+<span id='UChartBase-method-processExpr'>        /**
+</span>         * 处理字符串中嵌入的表达式，返回计算后的字符串
+         *
+         * @param source    源字符串
+         * @param datum     数据项
+         */
+        this.processExpr = function (source, datum) {
+            var result = source;
+            if (result &amp;&amp; result.indexOf(&quot;{!&quot;) &gt;= 0) {
+                // 内置函数，用于获取自定义列
+                var chart = this;
+                function dataValue(columnName) {
+                    var dataset = chart.dataset();
+                    if (dataset) {
+                        var column = dataset.columnIndex(columnName);
+                        if (column &gt;= 0) {
+                            var row = datum.dataRow;
+                            if (row &gt;= 0) {
+                                var rowData = dataset.rowData(row);
+                                return rowData[column];
+                            }
+                        }
+                    }
+
+                    return &quot;!ERROR&quot;;
+                }
+
+                // 处理表达式
+                var exprObj = null, value = null, pos = 0;
+                while (exprObj = findExpr(result, pos)) {
+                    if (datum != null &amp;&amp; exprObj.expr.indexOf(&quot;{$&quot;) &gt;= 0) {
+                        exprObj.expr = _util.replaceAll(exprObj.expr, &quot;{$CATEGORY}&quot;, &quot;datum.category&quot;);
+                        exprObj.expr = _util.replaceAll(exprObj.expr, &quot;{$VALUE}&quot;, &quot;datum.value&quot;);
+                    }
+                    value = eval(exprObj.expr);
+                    if (exprObj.start == 0 &amp;&amp; exprObj.end == result.length-1) {
+                        // 整个source就是一个表达式，则直接返回表达式计算结果
+                        return value;
+                    }
+
+                    result = result.substr(0, exprObj.start) + (value || &quot;&quot;) + result.substr(exprObj.end + 1);
+                    pos = exprObj.start;
+                }
+            }
+
+            if (result &amp;&amp; result.indexOf(&quot;{$&quot;) &gt;= 0) {
+                // 处理内置变量
+                if (datum != null) {
+                    result = _util.replaceAll(result, &quot;{$CATEGORY}&quot;, datum.category);
+                    result = _util.replaceAll(result, &quot;{$VALUE}&quot;, datum.value);
+                }
+
+                // 处理自定义变量
+                if (result &amp;&amp; result.indexOf(&quot;{$&quot;) &gt;= 0) {
+                    var exprObj = null, value = null, pos = 0;
+                    while (exprObj = findExpr(result, pos, true)) {
+                        value = eval(exprObj.expr);
+                        result = result.substr(0, exprObj.start) + (value || &quot;&quot;) + result.substr(exprObj.end + 1);
+                        pos = exprObj.start;
+                    }
+                }
+            }
+
+            return result;
+        };
+
+<span id='UChartBase-method-tooltip'>        /**
+</span>         * 返回提示框对象
+         *
+         * @param autoCreate    如果不存在，是否自动创建
+         */
+        this.tooltip = function (autoCreate) {
+            if (this.__tooltip__ == null &amp;&amp; autoCreate) {
+                this.__tooltip__ = new Tooltip(
+                    this.property(&quot;tip.scheme&quot;, &quot;green&quot;),
+                    this.property(&quot;tip.opacity&quot;, 0.9),
+                    this.property(&quot;tip.shadow&quot;),
+                    this.property(&quot;tip.animation&quot;));
+            }
+
+            return this.__tooltip__;
+        };
+
+<span id='UChartBase-method-destroy'>        /**
+</span>         * 销毁当前图形对象
+         */
+        this.destroy = function () {
+            var gc = this.gc(false);
+            var root = gc? gc.root() : null;
+            if (root) {
+                root.remove();
+            }
+        };
+
+<span id='UChartBase-method-layer'>        /**
+</span>         * 返回/创建指定名称的层
+         *
+         * @param id            层ID
+         * @param autoCreate    如果不存在，是否自动创建
+         * @param dock          停靠模式：top,bottom,left,right,none
+         * @param size          层的大小（根据停靠模式，可以是高度或宽度）
+         */
+        this.layer = function (id, autoCreate, dock, size, beforeLayer) {
+            var layer = null;
+            var i, n = this.__layers__.length;
+            for (i = 0; i &lt; n; i ++) {
+                layer = this.__layers__[i];
+                if (layer.id() == id) {
+                    break;
+                }
+                else {
+                    layer = null;
+                }
+            }
+            
+            if (layer == null &amp;&amp; autoCreate &amp;&amp; this.__gc__) {
+                // 计算位置
+                var containerSize = this.containerSize();
+                if (dock == &quot;back&quot;) {
+                    // 背景层
+                    layer = new Layer()
+                        .id(id)
+                        .x(0)
+                        .y(0)
+                        .width(containerSize[0])
+                        .height(containerSize[1]);
+                }
+                else {
+                    var left = this.property(&quot;marginLeft&quot;), top = this.property(&quot;marginTop&quot;);
+                    var right = this.property(&quot;marginRight&quot;), bottom = this.property(&quot;marginBottom&quot;);
+                    for (i = 0; i &lt; n; i ++) {
+                        layer = this.__layers__[i];
+                        if (layer.dock() == &quot;left&quot;) {
+                            left += layer.width();
+                        }
+                        else if (layer.dock() == &quot;right&quot;){
+                            right += layer.width();
+                        }
+                        else if (layer.dock() == &quot;top&quot;){
+                            top += layer.height();
+                        }
+                        else if (layer.dock() == &quot;bottom&quot;){
+                            bottom += layer.height();
+                        }
+                    }
+
+                    layer = new Layer()
+                        .id(id)
+                        .dock(dock);
+                    if (dock == &quot;left&quot;) {
+                        layer.x(left)
+                            .y(top)
+                            .width(size)
+                            .height(Math.max(containerSize[1] - top - bottom, 0));
+                    }
+                    else if (dock == &quot;right&quot;) {
+                        layer.x(containerSize[0] - right - size)
+                            .y(top)
+                            .width(size)
+                            .height(Math.max(containerSize[1] - top - bottom, 0));
+                    }
+                    else if (dock == &quot;top&quot;) {
+                        layer.x(left)
+                            .y(top)
+                            .width(Math.max(containerSize[0] - left - right, 0))
+                            .height(size);
+                    }
+                    else if (dock == &quot;bottom&quot;) {
+                        layer.x(left)
+                            .y(containerSize[1] - bottom - size)
+                            .width(Math.max(containerSize[0] - left - right, 0))
+                            .height(size);
+                    }
+                    else {
+                        layer.x(left)
+                            .y(top)
+                            .width(Math.max(containerSize[0] - left - right, 0))
+                            .height(Math.max(containerSize[1] - top - bottom, 0));
+                    }
+                }
+                if (layer.x() || layer.y()) {
+                    layer.translate([layer.x(), layer.y()]);
+                }
+
+                var root = this.__gc__.root();
+                root.addShape(layer, beforeLayer);
+                this.__layers__.push(layer);
+            }
+
+            return layer;
+        };
+
+<span id='UChartBase-method-itemShapes'>        /**
+</span>         * 返回代表数据的图形集合（数组）
+         */
+        this.itemShapes = function () {
+            var chartLayer = this.chartLayer(false);
+            var shapes = chartLayer ? chartLayer.shapes() : null;
+            return shapes;
+        };
+    }
+
+    UChartBase.prototype = new graph.BaseObject();
+    UChartBase.prototype.constructor = UChartBase;
+
+
+<span id='Layer'>    /**
+</span>     * 渲染层
+     * 
+     * @class
+     * @extends Group
+     */
+    function Layer () {
+        var _dock = null;
+        var _x = 0, _y = 0;
+        var _width = 0, _height = 0;
+
+<span id='Layer-method-dock'>        /**
+</span>         * 渲染层停靠方式，包括：left、top、right、bottom、none
+         * 根据停靠方式，层自动计算渲染位置及渲染区大小
+         */
+        this.dock = function (value) {
+            if (value === undefined) {
+                return _dock;
+            }
+            else {
+                _dock = value;
+                return this;
+            }
+        };
+
+<span id='Layer-method-x'>        /**
+</span>         * 渲染区左上角x坐标
+         */
+        this.x = function (value) {
+            if (value === undefined) {
+                return _x;
+            }
+            else {
+                _x = value;
+                return this;
+            }
+        };
+
+<span id='Layer-method-y'>        /**
+</span>         * 渲染区左上角y坐标
+         */
+        this.y = function (value) {
+            if (value === undefined) {
+                return _y;
+            }
+            else {
+                _y = value;
+                return this;
+            }
+        };
+
+<span id='Layer-method-width'>        /**
+</span>         * 渲染区宽度
+         */
+        this.width = function (value) {
+            if (value === undefined) {
+                return _width;
+            }
+            else {
+                _width = value;
+                return this;
+            }
+        };
+
+<span id='Layer-method-height'>        /**
+</span>         * 渲染区高度
+         */
+        this.height = function (value) {
+            if (value === undefined) {
+                return _height;
+            }
+            else {
+                _height = value;
+                return this;
+            }
+        };
+
+        this.init();
+    }
+
+    Layer.prototype = new graph.Group();
+    Layer.prototype.constructor = Layer;
+
+
+<span id='Dataset'>    /**
+</span>     * 数据集类
+     *
+     * @param meta      数据集的元数据, e.g. {columns: [{name: &quot;amount&quot;, title: &quot;销售额&quot;, datatype: &quot;Number&quot;}]}
+     * @param data      数据集的数据(CSV格式), e.g.: &quot;华北,32886.65\n华东,28966.33\n华南,53122.98\n西北,18995.22&quot;
+     *
+     * @class
+     */
+    function Dataset(meta, data) {
+        var _meta = meta;   //数据集元数据，包括列名、标题、数据类型等
+        var _data = data;   //数据集数据，按行、列组织为二维数组
+
+<span id='Dataset-method-meta'>        /**
+</span>         * 数据集元数据（列名、标题、数据类型等信息）
+         */
+        this.meta = function (value) {
+            if (!arguments.length) {
+                return _meta;
+            }
+            else {
+                _meta = value;
+                return this;
+            }
+        };
+
+<span id='Dataset-method-data'>        /**
+</span>         * 数据集数据（二维数组）
+         */
+        this.data = function (value) {
+            if (!arguments.length) {
+                return _data;
+            }
+            else {
+                _data = value;
+                return this;
+            }
+        };
+
+<span id='Dataset-method-parseCSV'>        /**
+</span>         * 解析CSV格式数据
+         *
+         * @param dataCSV   CSV格式数据
+         */
+        this.parseCSV = function (dataCSV) {
+            if (dataCSV != null) {
+                _data = d3.csv.parseRows(dataCSV);
+
+                if (_data &amp;&amp; this.column(0)) {
+                    // 转换数据类型
+                    var colCount = this.columnCount();
+                    var rowCount = this.rowCount();
+                    for (var col = 0; col &lt; colCount; col++) {
+                        var column = this.column(col);
+                        if (column &amp;&amp; column.datatype == &quot;Number&quot;) {
+                            for (var row = 0; row &lt; rowCount; row++) {
+                                var rowData = this.rowData(row);
+                                if (rowData &amp;&amp; rowData[col]) {
+                                    rowData[col] = Number(rowData[col]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                _data = null;
+            }
+
+            return this;
+        };
+
+<span id='Dataset-method-rowCount'>        /**
+</span>         * 返回数据行数
+         */
+        this.rowCount = function () {
+            if (_data != null) {
+                return _data.length;
+            }
+
+            return 0;
+        };
+
+<span id='Dataset-method-columnCount'>        /**
+</span>         * 返回数据列数
+         */
+        this.columnCount = function () {
+            if (_meta &amp;&amp; _meta.columns) {
+                return _meta.columns.length;
+            }
+            else {
+                var rowData = this.rowData(0);
+                if (rowData) {
+                    return rowData.length;
+                }
+            }
+
+            return 0;
+        };
+
+<span id='Dataset-method-rowData'>        /**
+</span>         * 返回指定行的数据（含各列数据的数组）
+         *
+         * @param index       行序号
+         */
+        this.rowData = function (index) {
+            if (_data != null &amp;&amp; index &lt; _data.length) {
+                return _data[index];
+            }
+
+            return null;
+        };
+
+<span id='Dataset-method-columnIndex'>        /**
+</span>         * 返回指定名称的列的序号
+         */
+        this.columnIndex = function (name) {
+            if (_meta &amp;&amp; _meta.columns) {
+                var i, n = _meta.columns.length;
+                for (i = 0; i &lt; n; i ++) {
+                    if (_meta.columns[i].name == name) {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
+        };
+
+<span id='Dataset-method-addColumn'>        /**
+</span>         * 增加列信息（元数据）
+         *
+         * @param name      列名
+         * @param title     列标题
+         * @param datatype  列数据类型，有效数据类型包括：String,Number,Date,Boolean
+         */
+        this.addColumn = function (name, title, datatype) {
+            var column = new Object();
+            column.name = name;
+            column.title = title;
+            column.datatype = datatype;
+
+            if (_meta == null) {
+                _meta = new Object();
+                _meta.columns = new Array();
+            }
+            var count = _meta.columns.length;
+            _meta.columns[count] = column;
+        };
+
+<span id='Dataset-method-column'>        /**
+</span>         * 返回指定列的信息
+         * @param index     列序号
+         */
+        this.column = function (index) {
+            if (_meta &amp;&amp; _meta.columns) {
+                if (index &gt;= 0 &amp;&amp; index &lt; _meta.columns.length) {
+                    return _meta.columns[index];
+                }
+            }
+
+            return null;
+        };
+    }
+
+<span id='Background'>    /**
+</span>     * 背景类
+     *
+     * @param color     颜色值，可以是渐变色，如：#ff0000,#ffffff,0
+     * @param image     背景图
+     * @param repeat    背景图重复方式，包括：no-repeat, repeat, repeat-x, repeat-y, stretch
+     *
+     * @class
+     * @extends BaseObject
+     */
+    function Background(color, image, repeat) {
+
+<span id='Background-method-color'>        /**
+</span>         * 设置/获取背景颜色，支持渐变色(起始颜色, 结束颜色, 渐变角度)
+         *
+         * e.g. 单色：  red、#80ffee00
+         *      渐变色：#ffee00,#ffffff,90
+         */
+        this.color = function (value) {
+            return this.attr(&quot;color&quot;, value);
+        };
+
+<span id='Background-method-image'>        /**
+</span>         * 设置/获取背景图像
+         */
+        this.image = function (value) {
+            return this.attr(&quot;image&quot;, value);
+        };
+
+<span id='Background-method-repeat'>        /**
+</span>         * 设置/获取背景图像的重复方式
+         *
+         * 有效重复方式包括：
+         * no-repeat, repeat, repeat-x, repeat-y, stretch
+         */
+        this.repeat = function (value) {
+            return this.attr(&quot;repeat&quot;, value);
+        };
+
+
+        // 初始化
+        this.init();
+        if (color) {
+            this.color(color);
+        }
+    }
+
+    Background.prototype = new graph.BaseObject();
+    Background.constructor = Background;
+
+<span id='Font'>    /**
+</span>     * 字体类
+     *
+     * @class
+     * @extends BaseObject
+     */
+    function Font(fontSize, family) {
+
+<span id='Font-method-family'>        /**
+</span>         * 字体族，e.g.'Verdana, Arial, Serif’
+         */
+        this.family = function (value) {
+            return this.attr(&quot;family&quot;, value);
+        };
+
+<span id='Font-method-size'>        /**
+</span>         * 字体大小
+         */
+        this.size = function (value) {
+            return this.attr(&quot;size&quot;, value);
+        };
+
+<span id='Font-method-color'>        /**
+</span>         * 字体颜色
+         */
+        this.color = function (value) {
+            return this.attr(&quot;color&quot;, value);
+        };
+
+<span id='Font-method-stroke'>        /**
+</span>         * 字体描边颜色
+         */
+        this.stroke = function (value) {
+            return this.attr(&quot;stroke&quot;, value);
+        };
+
+<span id='Font-method-bold'>        /**
+</span>         * 是否粗体
+         */
+        this.bold = function (value) {
+            return this.attr(&quot;bold&quot;, value);
+        };
+
+<span id='Font-method-italic'>        /**
+</span>         * 是否倾斜
+         */
+        this.italic = function (value) {
+            return this.attr(&quot;italic&quot;, value);
+        };
+
+<span id='Font-method-underline'>        /**
+</span>         * 是否加下划线
+         */
+        this.underline = function (value) {
+            return this.attr(&quot;underline&quot;, value);
+        };
+
+
+        // 初始化
+        this.init();
+        if (fontSize) {
+            this.size(fontSize);
+        }
+        if (family) {
+            this.family(family);
+        }
+    }
+
+    Font.prototype = new graph.BaseObject();
+    Font.constructor = Font;
+
+<span id='LineStyle'>    /**
+</span>     * 线型类
+     *
+     * @param color         颜色
+     * @param thickness     粗细
+     * @param type          线型，包括：solid, dash, dot, dashdot, dashdotd
+     *
+     * @class
+     * @extends BaseObject
+     */
+    function LineStyle(color, thickness, type) {
+<span id='LineStyle-method-color'>        /**
+</span>         * 颜色
+         */
+        this.color = function (value) {
+            return this.attr(&quot;color&quot;, value);
+        };
+
+<span id='LineStyle-method-thickness'>        /**
+</span>         * 粗细
+         */
+        this.thickness = function (value) {
+            return this.attr(&quot;thickness&quot;, value);
+        };
+
+<span id='LineStyle-method-type'>        /**
+</span>         * 线型
+         */
+        this.type = function (value) {
+            return this.attr(&quot;type&quot;, value);
+        };
+
+        // 初始化
+        this.init();
+        if (type) {
+            this.type(type);
+        }
+        if (color) {
+            this.color(color);
+        }
+        if (thickness) {
+            this.thickness(thickness);
+        }
+    }
+
+    LineStyle.prototype = new graph.BaseObject();
+    LineStyle.constructor = LineStyle;
+
+<span id='Title'>    /**
+</span>     * 标题类
+     *
+     * @class
+     * @extends BaseObject
+     */
+    function Title(text) {
+<span id='Title-method-text'>        /**
+</span>         * 标题文字
+         */
+        this.text = function (value) {
+            return this.attr(&quot;text&quot;, value);
+        };
+
+<span id='Title-method-font'>        /**
+</span>         * 标题字体
+         */
+        this.font = function (value) {
+            return this.attr(&quot;font&quot;, value);
+        };
+
+<span id='Title-method-location'>        /**
+</span>         * 标题位置
+         *
+         * 水平位置包括：left,center,right
+         * 垂直位置包括：top,bottom
+         * 可以是两者组合，如： center bottom
+         */
+        this.location = function (value) {
+            return this.attr(&quot;location&quot;, value);
+        };
+
+        // 初始化
+        this.init();
+        if (text) {
+            this.text(text);
+        }
+    }
+
+    Title.prototype = new graph.BaseObject();
+    Title.constructor = Title;
+
+
+<span id='DataPlot'>    /**
+</span>     * 数据项图形对象
+     *
+     * @param color
+     * @param border
+     * @param font
+     *
+     * @class
+     * @extends BaseObject
+     */
+    function DataPlot(color, border, font) {
+<span id='DataPlot-method-color'>        /**
+</span>         * 颜色
+         */
+        this.color = function (value) {
+            return this.attr(&quot;color&quot;, value);
+        };
+
+<span id='DataPlot-method-border'>        /**
+</span>         * 边框
+         */
+        this.border = function (value) {
+            return this.attr(&quot;border&quot;, value);
+        };
+
+<span id='DataPlot-method-font'>        /**
+</span>         * 字体
+         */
+        this.font = function (value) {
+            return this.attr(&quot;font&quot;, value);
+        };
+
+        // initialize
+        this.init();
+
+        if (color) {
+            this.color(color);
+        }
+        if (border) {
+            this.border(border);
+        }
+        if (font) {
+            this.font(font);
+        }
+    }
+
+    DataPlot.prototype = new graph.BaseObject();
+    DataPlot.constructor = DataPlot;
+
+
+<span id='Tooltip'>    /**
+</span>     * 弹出提示类
+     *
+     * @param scheme    配色方案，支持：yellow、blue、green、red、dark
+     * @param opacity   透明度，取值0 - 1
+     * @param shadow    是否显示阴影
+     * @param animation 是否以动画方式显示
+     *
+     * @class
+     * @extends BaseObject
+     */
+    function Tooltip(scheme, opacity, shadow, animation) {
+        var _tipDiv = null;
+        var _html = null;
+        var _timer = null;
+        var _mousePos = null;
+
+        // 初始化
+        this.init = function () {
+            Tooltip.prototype.init.call(this);
+
+            this.scheme(scheme);
+            this.opacity(opacity ? opacity : 1);
+            this.shadow(shadow);
+            this.animation(animation);
+        };
+
+<span id='Tooltip-method-scheme'>        /**
+</span>         * 提示框的配色方案，有效值包括：default,blue,green,red,dark
+         */
+        this.scheme = function (value) {
+            return this.attr(&quot;scheme&quot;, value);
+        };
+
+<span id='Tooltip-method-opacity'>        /**
+</span>         * 提示框的透明度
+         */
+        this.opacity = function (value) {
+            return this.attr(&quot;opacity&quot;, value);
+        };
+
+<span id='Tooltip-method-shadow'>        /**
+</span>         * 是否有阴影
+         */
+        this.shadow = function (value) {
+            return this.attr(&quot;shadow&quot;, value);
+        };
+
+<span id='Tooltip-method-animation'>        /**
+</span>         * 是否应用动画效果
+         */
+        this.animation = function (value) {
+            return this.attr(&quot;animation&quot;, value);
+        };
+
+<span id='Tooltip-method-html'>        /**
+</span>         * 提示文字（HTML片段，支持嵌入内置变量）
+         */
+        this.html = function (value) {
+            _html = value;
+            return this;
+        };
+
+        // 确保Tooltip在当前屏幕的可视范围内
+        function ensureVisible(x, y) {
+            var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+            var scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft;
+            var screenWidth = window.innerWidth;
+            var screenHeight = window.innerHeight;
+            var tipWidth = parseInt(_tipDiv.style(&quot;width&quot;));
+            var tipHeight = parseInt(_tipDiv.style(&quot;height&quot;));
+
+            x += scrollLeft, y += scrollTop;
+            if (x + tipWidth &gt; scrollLeft + screenWidth - 10) {
+                x = scrollLeft + screenWidth - 10 - tipWidth;
+            }
+            if (y + tipHeight &gt; scrollTop + screenHeight) {
+                y = scrollTop + screenHeight - tipHeight;
+            }
+
+            return [x, y];
+        }
+
+        // 创建提示框的DIV层
+        function createDiv() {
+            _tipDiv = d3.select(&quot;#uchart_tip&quot;);
+            if (_tipDiv.empty()) {
+                _tipDiv = d3.select(&quot;body&quot;).append(&quot;div&quot;)
+                    .attr(&quot;id&quot;, &quot;uchart_tip&quot;)
+                    .style(&quot;position&quot;, &quot;absolute&quot;)
+                    .style(&quot;left&quot;, &quot;0px&quot;)
+                    .style(&quot;top&quot;, &quot;0px&quot;)
+                    .style(&quot;opacity&quot;, 0)
+                    .style(&quot;pointer-events&quot;, &quot;none&quot;)
+                    .style(&quot;box-sizing&quot;, &quot;border-box&quot;)
+                    .style(&quot;font-size&quot;, &quot;13px&quot;)
+                    .style(&quot;padding&quot;, &quot;8px&quot;)
+                    .style(&quot;border-radius&quot;, &quot;5px&quot;)
+                    .style(&quot;z-index&quot;, &quot;999999&quot;);
+                //.attr('class', 'uchart-tip')
+            }
+
+            if (this.shadow()) {
+                _tipDiv.style(&quot;text-shadow&quot;, &quot;none&quot;)
+                    .style(&quot;-moz-box-shadow&quot;, &quot;0 0 10px rgba(0, 0, 0, .5)&quot;)
+                    .style(&quot;-webkit-box-shadow&quot;, &quot;0 0 10px rgba(0, 0, 0, .5)&quot;)
+                    .style(&quot;box-shadow&quot;, &quot;0 0 10px rgba(0, 0, 0, .5)&quot;);
+            }
+
+            var scheme = this.scheme();
+            if (scheme == &quot;blue&quot;) {
+                // 蓝色提示框
+                _tipDiv.style(&quot;border&quot;, &quot;1px solid #add9ed&quot;)
+                    .style(&quot;background-color&quot;, &quot;#e5f6fe&quot;)
+                    .style(&quot;color&quot;, &quot;#5e99bd&quot;);
+            }
+            else if (scheme == &quot;green&quot;) {
+                // 绿色提示框
+                _tipDiv.style(&quot;border&quot;, &quot;1px solid #90d93f&quot;)
+                    .style(&quot;background-color&quot;, &quot;#caed9e&quot;)
+                    .style(&quot;color&quot;, &quot;#3f6219&quot;);
+            }
+            else if (scheme == &quot;red&quot;) {
+                // 红色提示框
+                _tipDiv.style(&quot;border&quot;, &quot;1px solid #d95252&quot;)
+                    .style(&quot;background-color&quot;, &quot;#f78b83&quot;)
+                    .style(&quot;color&quot;, &quot;#912323&quot;);
+            }
+            else if (scheme == &quot;dark&quot;) {
+                // 黑色提示框
+                _tipDiv.style(&quot;border&quot;, &quot;1px solid #303030&quot;)
+                    .style(&quot;background-color&quot;, &quot;#505050&quot;)
+                    .style(&quot;color&quot;, &quot;#f3f3f3&quot;);
+            }
+            else {
+                // 黄色提示框
+                _tipDiv.style(&quot;border&quot;, &quot;1px solid #f1d031&quot;)
+                    .style(&quot;background-color&quot;, &quot;#ffffa3&quot;)
+                    .style(&quot;color&quot;, &quot;#555&quot;);
+            }
+        }
+
+<span id='Tooltip-method-show'>        /**
+</span>         * 在指定位置显示提示框
+         */
+        this.show = function (x, y) {
+            if (_html == null || _html == &quot;&quot;) {
+                return this;
+            }
+
+            if (_timer) {
+                clearInterval(_timer);
+                _timer = null;
+            }
+
+            if (this.autoMode()) {
+                if (_mousePos == null) {
+                    _mousePos = d3.event ? [d3.event.clientX, d3.event.clientY] : [0, 0];
+                    d3.select(&quot;body&quot;).on(&quot;mousemove&quot;, function () {
+                        _mousePos = [d3.event.clientX, d3.event.clientY];//d3.mouse(_tipDiv.node());
+                    });
+                }
+                else if (d3.event) {
+                    _mousePos = [d3.event.clientX, d3.event.clientY];
+                }
+
+                var tip = this;
+                var lastPos = _mousePos;
+                var opacity = tip.opacity();
+                _timer = setInterval(function () {
+                    if (Math.abs(lastPos[0] - _mousePos[0]) &lt; 5 &amp;&amp; Math.abs(lastPos[1] - _mousePos[1]) &lt; 5) {
+                        if (!tip.isShown()) {
+                            if (_tipDiv == null) {
+                                createDiv.call(tip);
+                            }
+                            _tipDiv.html(_html);
+                            var pos = ensureVisible(_mousePos[0] + 13, _mousePos[1] + 13);
+                            if (tip.animation()) {
+                                _tipDiv.style(&quot;left&quot;, pos[0] + &quot;px&quot;)
+                                    .style(&quot;top&quot;, pos[1] + &quot;px&quot;)
+                                    .transition()
+                                    .duration(300)
+                                    .ease(&quot;linear&quot;)
+                                    .style(&quot;opacity&quot;, opacity)
+
+                            }
+                            else {
+                                _tipDiv.style(&quot;opacity&quot;, opacity)
+                                    .style(&quot;left&quot;, pos[0] + &quot;px&quot;)
+                                    .style(&quot;top&quot;, pos[1] + &quot;px&quot;);
+                            }
+                        }
+                    }
+                    else {
+                        if (!tip.isShown()) {
+                            // 移动了鼠标，重新计算延迟
+                            lastPos = _mousePos;
+                        }
+                        else {
+                            tip.hide();
+                        }
+                    }
+                }, 500);
+            }
+            else {
+                if (_tipDiv == null) {
+                    createDiv.call(this);
+                }
+                _tipDiv.html(_html);
+                var pos = ensureVisible(x, y);
+                if (this.animation()) {
+                    _tipDiv.transition()
+                        .duration(1000)
+                        .ease(&quot;elastic&quot;)
+                        .style(&quot;opacity&quot;, opacity)
+                        .style(&quot;left&quot;, pos[0] + &quot;px&quot;)
+                        .style(&quot;top&quot;, pos[1] + &quot;px&quot;);
+                }
+                else {
+                    _tipDiv.style(&quot;opacity&quot;, opacity)
+                        .style(&quot;left&quot;, pos[0] + &quot;px&quot;)
+                        .style(&quot;top&quot;, pos[1] + &quot;px&quot;);
+                }
+            }
+
+            return this;
+        };
+
+<span id='Tooltip-method-hide'>        /**
+</span>         * 隐藏提示
+         */
+        this.hide = function () {
+            if (_tipDiv) {
+                _tipDiv.transition()
+                    .duration(300)
+                    .ease(&quot;linear&quot;)
+                    .style(&quot;opacity&quot;, 0);
+            }
+
+            if (_timer) {
+                clearInterval(_timer);
+                _timer = null;
+            }
+
+            return this;
+        };
+
+<span id='Tooltip-method-location'>        /**
+</span>         * 标题位置
+         *
+         * 水平位置包括：left,center,right
+         * 垂直位置包括：top,bottom
+         * 可以是两者组合，如： center bottom
+         */
+        this.location = function (value) {
+            return this.attr(&quot;location&quot;, value);
+        };
+
+<span id='Tooltip-method-autoMode'>        /**
+</span>         * 是否自动模式
+         * 如果设置为自动模式，图表移动位置时提示框会自动消失
+         */
+        this.autoMode = function (value) {
+            return this.attr(&quot;autoMode&quot;, value);
+        };
+
+<span id='Tooltip-method-style'>        /**
+</span>         * 设置提示的样式
+         *
+         * @param name      CSS项目名称
+         * @param value     CSS项目值
+         */
+        this.style = function (name, value) {
+            _tipDiv.style(name, value);
+            return this;
+        };
+
+<span id='Tooltip-method-isShown'>        /**
+</span>         * 判断提示框是否已显示
+         */
+        this.isShown = function () {
+            if (_tipDiv == null || _tipDiv.style(&quot;opacity&quot;) == 0) {
+                return false;
+            }
+
+            return true;
+        };
+
+        this.init();
+    }
+
+    Tooltip.prototype = new graph.BaseObject();
+    Tooltip.constructor = Tooltip;
+
+
+<span id='Breadcrumb'>    /**
+</span>     * 面包屑导航条
+     *
+     * @class
+     * @extends BaseObject
+     */
+    function Breadcrumb(breadcrumbLayer, x, y, height) {
+
+        this.init = function () {
+            Breadcrumb.prototype.init.call(this);
+
+            this.height(30)
+                .color(&quot;#3082D9&quot;)
+                .hoverColor(&quot;#F37F13&quot;)
+                .border({color: &quot;yellow&quot;, thickness: 1})
+                .gap(4)
+                .marginTop(3)
+                .marginBottom(3);
+        };
+
+        // ====================================================
+        // Properties
+
+<span id='Breadcrumb-method-height'>        /**
+</span>         * 面包屑高度
+         */
+        this.height = function (value) {
+            return this.attr(&quot;height&quot;, value);
+        };
+
+<span id='Breadcrumb-method-color'>        /**
+</span>         * 颜色
+         */
+        this.color = function (value) {
+            return this.attr(&quot;color&quot;, value);
+        };
+
+<span id='Breadcrumb-method-hoverColor'>        /**
+</span>         * 鼠标移上去的颜色
+         */
+        this.hoverColor = function (value) {
+            return this.attr(&quot;hoverColor&quot;, value);
+        };
+
+<span id='Breadcrumb-method-border'>        /**
+</span>         * 边框属性，包括颜色、线型
+         */
+        this.border = function (value) {
+            return this.attr(&quot;border&quot;, value);
+        };
+
+<span id='Breadcrumb-method-gap'>        /**
+</span>         * 面包屑条目间隙
+         */
+        this.gap = function (value) {
+            return this.attr(&quot;gap&quot;, value);
+        };
+
+<span id='Breadcrumb-method-marginTop'>        /**
+</span>         * 上边空白
+         */
+        this.marginTop = function (value) {
+            return this.attr(&quot;marginTop&quot;, value);
+        };
+
+<span id='Breadcrumb-method-marginBottom'>        /**
+</span>         * 下边空白
+         */
+        this.marginBottom = function (value) {
+            return this.attr(&quot;marginBottom&quot;, value);
+        };
+        // ====================================================
+
+<span id='Breadcrumb-method-render'>        /**
+</span>         * 渲染输出
+         *
+         * @param datum     关联的数据项
+         */
+        this.render = function (datum) {
+            var index = this.findBreadcrumbItem(datum);
+            if (index &lt; 0) {
+                // 不存在，则创建
+                var text = datum.category ? datum.category : datum.text;
+                var gap = this.gap(), lastPos = -gap + 1;
+                var marginTop = this.marginTop(), marginBottom = this.marginBottom();
+                var shapes = breadcrumbLayer.shapes();
+                if (shapes &amp;&amp; shapes.length &gt; 0) {
+                    lastPos = shapes[shapes.length - 1].lastPos;
+                }
+
+                var shape = createBreadcrumbItem.call(this, lastPos + gap, marginTop,
+                    height - marginTop - marginBottom, text);
+                shape.datum(datum);
+                shape.cursor(&quot;hand&quot;);
+
+                var breadcrumb = this;
+                new behav.Touch()
+                    .click(function (x, y) {
+                        if (this.datum() &amp;&amp; breadcrumb.onItemClick) {
+                            breadcrumb.onItemClick(this.datum());
+                        }
+                    })
+                    .moveIn(function (x, y) {
+                        var shape = this.selectShape(&quot;Path&quot;);
+                        if (shape &amp;&amp; breadcrumb.hoverColor()) {
+                            shape.fill(breadcrumb.hoverColor());
+                        }
+                    })
+                    .moveOut(function (x, y) {
+                        var shape = this.selectShape(&quot;Path&quot;);
+                        if (shape) {
+                            shape.fill(breadcrumb.color());
+                        }
+                    })
+                    .toShapes(shape);
+            }
+            else {
+                // 已存在，删除后面的条目
+                var count = breadcrumbLayer.shapes() ? breadcrumbLayer.shapes().length : 0;
+                for (var i = count; i &gt;= index + 1; i--) {
+                    var shape = breadcrumbLayer.selectShape(&quot;Group#ID_&quot; + i);
+                    if (shape) {
+                        shape.opacity(1);
+                        var animation = new anima.Animation(&quot;linear&quot;, 200, {opacity: 0}, (count - i) * 100)
+                            .transitionEnd(function () {
+                                this.remove();
+                            });
+                        animation.toShapes(shape);
+                    }
+                }
+            }
+        };
+
+<span id='Breadcrumb-method-findBreadcrumbItem'>        /**
+</span>         * 根据数据项查找面包屑条目，返回其序号（找不到返回-1）
+         */
+        this.findBreadcrumbItem = function (datum) {
+            if (breadcrumbLayer) {
+                for (var i = 1; ; i++) {
+                    var shape = breadcrumbLayer.selectShape(&quot;Group#ID_&quot; + i);
+                    if (shape == null) {
+                        break;
+                    }
+
+                    if (shape.datum() == datum) {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
+        };
+
+<span id='Breadcrumb-method-createBreadcrumbItem'>        /**
+</span>         * 创建面包屑条目
+         */
+        function createBreadcrumbItem(x, y, h, text) {
+            var count = breadcrumbLayer.shapes() ? breadcrumbLayer.shapes().length : 0;
+            var group = new graph.Group().id(&quot;ID_&quot; + (count + 1));
+            breadcrumbLayer.addShape(group);
+
+            var path = new graph.Path()
+                .fill(this.color());
+            if (this.border()) {
+                _util.applyBorderTo(this.border(), path);
+            }
+
+            var w = 1;
+            if (count == 0) {
+                // is home
+                w = h;
+                path.beginPath()
+                    .moveTo(x, y)
+                    .lineToH(x + w)
+                    .lineTo(x + w + 8, h / 2)
+                    .lineTo(x + w, h)
+                    .lineToH(x)
+                    .close()
+                    .endPath();
+                group.addShape(path);
+
+                var src = require.toUrl(&quot;./images/home.png&quot;);
+                var homeImg = new graph.Image(x + 6, y + 4, w - 8, h - 8, src)
+                    .pointerEvents(&quot;none&quot;);
+                group.addShape(homeImg);
+            }
+            else {
+                // 先按宽带1画
+                w = 1;
+                path.beginPath()
+                    .moveTo(x, y)
+                    .lineToH(x + w)
+                    .lineTo(x + w + 8, h / 2)
+                    .lineTo(x + w, h)
+                    .lineToH(x)
+                    .lineTo(x + 8, h / 2)
+                    .close()
+                    .endPath();
+                group.addShape(path);
+
+                var label = new graph.Text(0, 0, text)
+                    .fontSize(13)
+                    .fill(&quot;white&quot;)
+                    .opacity(0)
+                    .pointerEvents(&quot;none&quot;);
+                group.addShape(label);
+
+                // 调整为匹配文字的宽度
+                var bbox = label.bbox();
+                var w0 = w;
+                w = bbox.width + 8 + 6;
+
+                var animation = new anima.Animation(&quot;linear&quot;, 300,
+                    {
+                        path: function () {
+                            // 通过自定义插值函数实现不规则的d值动画
+                            var interpolate = d3.interpolate(w0, w);
+                            return function (t) {
+                                var w = interpolate(t);
+                                path.beginPath()
+                                    .moveTo(x, y)
+                                    .lineToH(x + w)
+                                    .lineTo(x + w + 8, h / 2)
+                                    .lineTo(x + w, h)
+                                    .lineToH(x)
+                                    .lineTo(x + 8, h / 2)
+                                    .close()
+                                    .endPath(true);
+                                return path.lastPath();
+                            };
+                        }
+                    })
+                    .transitionEnd(function () {
+                        new anima.Animation(&quot;linear&quot;, 200, {opacity: 1})
+                            .toShapes(label);
+                    });
+                animation.toShapes(path);
+
+                // 中心点相对于基准点的坐标
+                var cx0 = bbox.x + bbox.width / 2;
+                var cy0 = bbox.y + bbox.height / 2;
+
+                // 文字中心点移到Block的中点
+                var offX = x + 8 + 4 + bbox.width / 2 - cx0;
+                var offY = y + h / 2 - cy0;
+                label.translate([offX, offY]);
+            }
+
+            group.lastPos = x + w;
+
+            return group;
+        };
+
+<span id='Breadcrumb-method-itemClick'>        /**
+</span>         * 面包屑点击事件
+         *
+         * @param method    事件方法
+         */
+        this.itemClick = function (method) {
+            if (method === undefined) {
+                return this.onItemClick;
+            }
+            else {
+                this.onItemClick = method;
+                return this;
+            }
+        };
+
+        this.init();
+    }
+
+    Breadcrumb.prototype = new graph.BaseObject();
+    Breadcrumb.constructor = Breadcrumb;
+
+
+<span id='UChartConfig'>    /**
+</span>     * UCharts 配置类，用于获取图表类库及路径、主题等
+     *
+     * @class
+     */
+    function UChartConfig() {
+
+        var _theme = null;
+        var _ucharts = null;
+
+<span id='UChartConfig-method-theme'>        /**
+</span>         * 获取 / 设置当前主题
+         */
+        this.theme = function (value) {
+            if (value === undefined) {
+                return _theme;
+            }
+            else {
+                _theme = value;
+                return this;
+            }
+        };
+
+<span id='UChartConfig-method-allChartTypes'>        /**
+</span>         * 返回全部已注册的图表类型信息（数组）
+         */
+        this.allChartTypes = function () {
+            return _ucharts;
+        };
+
+<span id='UChartConfig-method-findChart'>        /**
+</span>         * 根据图表名称、类别查找图表
+         *
+         * @param chartName     图表名
+         * @param categoryName  图表类别
+         */
+        this.findChart = function (chartName, categoryName) {
+            if (_ucharts) {
+                for (var i = 0; i &lt; _ucharts.length; i++) {
+                    var category = _ucharts[i];
+                    if (categoryName == null || categoryName.equal(category.categoryName)) {
+                        for (var j = 0; j &lt; category.chartTypes.length; j++) {
+                            var chartType = category.chartTypes[j];
+                            if (chartName == chartType.chartName) {
+                                return chartType;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        this.init = function () {
+            require(['./config'], function (config) {
+                var themeUrl = config.themeUrl;
+                _ucharts = config.ucharts;
+                if (themeUrl &amp;&amp; themeUrl != &quot;&quot;) {
+                    themeUrl = themeUrl.replace(&quot;.js&quot;, &quot;&quot;);
+                    require([themeUrl], function (theme) {
+                        _theme = theme;
+                        _theme.url = themeUrl + &quot;.js&quot;;
+                        if (_ready) {
+                            _ready.call(this);
+                        }
+                    });
+                }
+                else {
+                    if (_ready) {
+                        _ready.call(this);
+                    }
+                }
+            });
+        };
+
+        this.init();
+    }
+
+    UChartConfig.prototype = new graph.BaseObject();
+    UChartConfig.constructor = UChartConfig;
+
+
+<span id='Util'>    /**
+</span>     * 公共方法类
+     *
+     * @class
+     */
+    function Util() {
+        function _format(pattern, num, z) {
+            var j = pattern.length &gt;= num.length ? pattern.length : num.length;
+            var p = pattern.split(&quot;&quot;);
+            var n = num.split(&quot;&quot;);
+            var bool = true, nn = &quot;&quot;;
+            for (var i = 0; i &lt; j; i++) {
+                var x = n[n.length - j + i];
+                var y = p[p.length - j + i];
+                if (z == 0) {
+                    if (bool) {
+                        if (( x &amp;&amp; y &amp;&amp; (x != &quot;0&quot; || y == &quot;0&quot;)) || ( x &amp;&amp; x != &quot;0&quot; &amp;&amp; !y ) || ( y &amp;&amp; y == &quot;0&quot; &amp;&amp; !x )) {
+                            nn += x ? x : &quot;0&quot;;
+                            bool = false;
+                        }
+                    } else {
+                        nn += x ? x : &quot;0&quot;;
+                    }
+                } else {
+                    if (y &amp;&amp; ( y == &quot;0&quot; || ( y == &quot;#&quot; &amp;&amp; x ) ))
+                        nn += x ? x : &quot;0&quot;;
+                }
+            }
+            return nn;
+        }
+
+        function _formatNumber(numChar, pattern) {
+            var patterns = pattern.split(&quot;.&quot;);
+            var numChars = numChar.split(&quot;.&quot;);
+            var z = patterns[0].indexOf(&quot;,&quot;) == -1 ? -1 : patterns[0].length - patterns[0].indexOf(&quot;,&quot;);
+            var num1 = _format(patterns[0].replace(&quot;,&quot;), numChars[0], 0);
+            var num2 = _format(patterns[1] ? patterns[1].split('').reverse().join('') : &quot;&quot;, numChars[1] ? numChars[1].split('').reverse().join('') : &quot;&quot;, 1);
+            num1 = num1.split(&quot;&quot;).reverse().join('');
+            var reCat = eval(&quot;/[0-9]{&quot; + (z - 1) + &quot;,&quot; + (z - 1) + &quot;}/gi&quot;);
+            var arrdata = z &gt; -1 ? num1.match(reCat) : undefined;
+            if (arrdata &amp;&amp; arrdata.length &gt; 0) {
+                var w = num1.replace(arrdata.join(''), '');
+                num1 = arrdata.join(',') + ( w == &quot;&quot; ? &quot;&quot; : &quot;,&quot; ) + w;
+            }
+            num1 = num1.split(&quot;&quot;).reverse().join(&quot;&quot;);
+            return (num1 == &quot;&quot; ? &quot;0&quot; : num1) + (num2 != &quot;&quot; ? &quot;.&quot; + num2.split(&quot;&quot;).reverse().join('') : &quot;&quot; );
+        }
+
+<span id='Util-method-formatNumber'>        /**
+</span>         * 格式化数字
+         */
+        function formatNumber(num, opt) {
+            var reCat = /[0#,.]{1,}/gi;
+            var zeroExc = opt.zeroExc == undefined ? true : opt.zeroExc;
+            var pattern = opt.pattern.match(reCat)[0];
+            var numChar = num.toString();
+            return !(zeroExc &amp;&amp; numChar == 0) ? opt.pattern.replace(pattern, _formatNumber(numChar, pattern)) : opt.pattern.replace(pattern, &quot;0&quot;);
+        }
+
+<span id='Util-method-format'>        /**
+</span>         * 格式化
+         *
+         * @param value     原始值
+         * @param pattern   格式化模板，兼容Excel格式模板
+         */
+        this.format = function (value, pattern) {
+            return formatNumber(value, {pattern: pattern});
+        };
+
+<span id='Util-method-replaceAll'>        /**
+</span>         * 全部替换
+         */
+        this.replaceAll = function (source, findWhat, replaceWith) {
+            var result = source;
+            if (source != null &amp;&amp; findWhat != null &amp;&amp; findWhat != &quot;&quot;) {
+                // result = source.replace(new RegExp(findWhat, &quot;g&quot;), replaceWith);
+                var pos = 0, len1 = findWhat.length, len2 = replaceWith.length;
+                while ((pos = result.indexOf(findWhat, pos)) &gt;= 0) {
+                    result = result.substr(0, pos) + replaceWith + result.substr(pos + len1);
+                    pos += len2;
+                }
+            }
+
+            return result;
+        };
+
+<span id='Util-method-valueOf'>        /**
+</span>         * 返回自动对象属性值
+         */
+        this.valueOf = function (source, owner, defaultValue) {
+            var result = null;
+            if (source == null) {
+                result = null;
+            }
+            else if (typeof source == &quot;function&quot;) {
+                result = source.call(owner);
+            }
+            else {
+                result = source;
+            }
+            if (result == null &amp;&amp; defaultValue) {
+                result = defaultValue;
+            }
+
+            return result;
+        };
+
+<span id='Util-method-applyFontTo'>        /**
+</span>         * 应用字体到指定文字
+         */
+        this.applyFontTo = function (font, text) {
+            var fontFamily = this.valueOf(font.family, font);
+            var fontSize = this.valueOf(font.size, font);
+            var fontColor = this.valueOf(font.color, font);
+            var fontStroke = this.valueOf(font.stroke, font);
+            var fontBold = this.valueOf(font.bold, font);
+            var fontItalic = this.valueOf(font.italic, font);
+
+            if (fontFamily != null) {
+                text.fontFamily(fontFamily);
+            }
+            if (fontSize != null) {
+                text.fontSize(fontSize);
+            }
+            if (fontColor != null) {
+                text.fill(fontColor);
+            }
+            if (fontStroke != null) {
+                text.stroke(fontStroke).strokeWidth(1);
+            }
+            if (fontBold != null) {
+                text.fontWeight(fontBold? &quot;bold&quot; : &quot;normal&quot;);
+            }
+            if (fontItalic != null) {
+                text.fontStyle(fontItalic? &quot;italic&quot; : &quot;normal&quot;);
+            }
+        };
+
+<span id='Util-method-applyBorderTo'>        /**
+</span>         * 应用边框到指定图形
+         * @param lineStyle
+         * @param shape
+         */
+        this.applyBorderTo = function (lineStyle, shape) {
+            var color = this.valueOf(lineStyle.color, lineStyle);
+            var thickness = this.valueOf(lineStyle.thickness, lineStyle, 1);
+            if (color != null) {
+                shape.stroke(color).strokeWidth(thickness);
+            }
+        };
+
+        // 应用背景到指定层
+        this.applyBackgroundTo = function (background, layer, left, top, width, height) {
+            var bgShape = null;
+            var bgColor = this.valueOf(background.color, background);
+            if (bgColor != null) {
+                bgShape = new graph.Rect(left, top, width, height).fill(bgColor);
+                var before = layer.shapes() &amp;&amp; layer.shapes().length &gt; 0? layer.shapes()[0] : null;
+                layer.addShape(bgShape, before);
+            }
+
+            var bgImage = this.valueOf(background.image, background);
+            if (bgImage) {
+                // TODO:
+            }
+
+            return bgShape;
+        };
+    }
+
+
+<span id='Util-method-ready'>    /**
+</span>     * 设置准备就绪回调方法，可在此方法中执行创建图表等操作
+     *
+     * @param method    回调方法
+     */
+    function ready(method) {
+        _ready = method;
+    }
+
+    _config = new UChartConfig();
+    _util = new Util();
+
+
+    return {
+        UChartBase: UChartBase,
+        Dataset: Dataset,
+        Background: Background,
+        Font: Font,
+        Title: Title,
+        LineStyle: LineStyle,
+        Tooltip: Tooltip,
+        DataPlot: DataPlot,
+        Breadcrumb: Breadcrumb,
+
+        config: _config,
+        util: _util,
+
+        ready: ready
+    };
+});</pre>
+</body>
+</html>

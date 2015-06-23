@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">define(function () {
+    return {
+        // 全局属性
+        UChartBase: {
+            palette: [
+                // d3_category20b
+                &quot;#393b79&quot;,
+                &quot;#5254a3&quot;,
+                &quot;#6b6ecf&quot;,
+                &quot;#9c9ede&quot;,
+                &quot;#637939&quot;,
+                &quot;#8ca252&quot;,
+                &quot;#b5cf6b&quot;,
+                &quot;#cedb9c&quot;,
+                &quot;#8c6d31&quot;,
+                &quot;#bd9e39&quot;,
+                &quot;#e7ba52&quot;,
+                &quot;#e7cb94&quot;,
+                &quot;#843c39&quot;,
+                &quot;#ad494a&quot;,
+                &quot;#d6616b&quot;,
+                &quot;#e7969c&quot;,
+                &quot;#7b4173&quot;,
+                &quot;#a55194&quot;,
+                &quot;#ce6dbd&quot;,
+                &quot;#de9ed6&quot;
+            ],
+
+            tip: {
+                scheme: &quot;green&quot;, opacity: 0.9, shadow: true, animation: true,
+                // html: &quot;&lt;span style='white-space:nowrap;'&gt;名称: {$CATEGORY}&lt;/span&gt;&lt;br/&gt;&lt;span style='white-space:nowrap;'&gt;数值: {$VALUE}&lt;/span&gt;&quot;
+            },
+
+            title: {
+                // height: 30,
+                font: {family: &quot;Helvetica, Arial, sans-serif&quot;, size: 24, color: &quot;orange&quot;, bold: true},
+                location: &quot;top center&quot;
+            },
+
+            marginLeft: 12,
+            marginRight: 12,
+            marginTop: 10,
+            marginBottom: 10
+
+            // background: {color: &quot;#a02da7e1&quot;},
+            // border: {color: &quot;cyan&quot;, thickness: 2},
+            // dataPlot: {color: &quot;blue&quot;, border: {color: &quot;blue&quot;, thickness: 1}, font: {family: &quot;Verdana&quot;, size: 12}}
+        },
+
+        // 饼图属性
+        UChartPie: {
+            palette: [
+                // d3_category20
+                &quot;#1f77b4&quot;,
+                &quot;#aec7e8&quot;,
+                &quot;#ff7f0e&quot;,
+                &quot;#ffbb78&quot;,
+                &quot;#2ca02c&quot;,
+                &quot;#98df8a&quot;,
+                &quot;#d62728&quot;,
+                &quot;#ff9896&quot;,
+                &quot;#9467bd&quot;,
+                &quot;#c5b0d5&quot;,
+                &quot;#8c564b&quot;,
+                &quot;#c49c94&quot;,
+                &quot;#e377c2&quot;,
+                &quot;#f7b6d2&quot;,
+                &quot;#7f7f7f&quot;,
+                &quot;#c7c7c7&quot;,
+                &quot;#bcbd22&quot;,
+                &quot;#dbdb8d&quot;,
+                &quot;#17becf&quot;,
+                &quot;#9edae5&quot;
+            ]
+        },
+
+        // 标签云属性
+        TagCloud: {
+            dataPlot: {font: {family: &quot;Impact&quot;}},
+            startFontSize: 8,
+            endFontSize: 24
+            // startAngle: -60,
+            // endAngle: 60,
+            // orientations: 5,
+            // categoryColumn: 0,
+            // valueColumn: 1
+        },
+
+        // 树图属性
+        TreeMap: {
+            breadcrumb: {
+                height: 30,
+                marginTop: 1,
+                marginBottom: 2,
+                gap: 3,
+                color: &quot;#669933&quot;,
+                hoverColor: &quot;#F37F13&quot;
+            },
+            idColumn: 0,
+            categoryColumn: 1,
+            valueColumn: 2,
+            parentIdColumn: 3,
+            dataPlot: {
+                border: {color: &quot;yellow&quot;, thickness: 1},
+                font: {family: &quot;Verdana, Arial, sans-serif&quot;, size: 12, color: &quot;white&quot;},
+                valueFont: {family: &quot;Verdana, Arial, sans-serif&quot;, size: 8, color: &quot;yellow&quot;},
+                // valueFormat: &quot;￥#.00&quot;
+            },
+            hoverBorder: {color: &quot;orange&quot;, thickness: 2}
+        }
+    };
+});
+</pre>
+</body>
+</html>

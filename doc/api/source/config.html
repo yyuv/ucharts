@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">define(function () {
+    return {
+        ucharts: [
+            {
+                categoryName: &quot;PieChart&quot;,
+                showName: &quot;饼图&quot;,
+                chartTypes: [
+                    {
+                        chartName: &quot;Pie2D&quot;,
+                        showName: &quot;2D饼图&quot;,
+                        module: &quot;./pie/pie2d&quot;
+                    },
+                    {
+                        chartName: &quot;D3Pie&quot;,
+                        showName: &quot;D3饼图&quot;,
+                        module: &quot;./pie/D3Pie&quot;
+                    },
+                    {
+                        chartName: &quot;EChartPie&quot;,
+                        showName: &quot;EChart饼图&quot;,
+                        module: &quot;./pie/EChartPie&quot;
+                    }
+                ]
+            },
+            {
+                categoryName: &quot;BarChart&quot;,
+                showName: &quot;柱形图&quot;,
+                chartTypes: [
+                    {
+                        chartName: &quot;D3Bar&quot;,
+                        showName: &quot;D3柱形图&quot;,
+                        module: &quot;./bar/D3Bar&quot;
+                    },
+                    {
+                        chartName: &quot;EChartBar&quot;,
+                        showName: &quot;EChart柱形图&quot;,
+                        module: &quot;./bar/EChartBar&quot;
+                    }
+                ]
+            },
+            {
+                categoryName: &quot;Advance&quot;,
+                showName: &quot;高级图表&quot;,
+                chartTypes: [
+                    {
+                        chartName: &quot;TagCloud&quot;,
+                        showName: &quot;标签云&quot;,
+                        module: &quot;./advance/TagCloud&quot;
+                    },
+                    {
+                        chartName: &quot;TreeMap&quot;,
+                        showName: &quot;树图&quot;,
+                        module: &quot;./advance/TreeMap&quot;
+                    }
+                ]
+            }
+        ],
+
+        themeUrl: &quot;./default-theme.js&quot;
+    };
+});
+</pre>
+</body>
+</html>

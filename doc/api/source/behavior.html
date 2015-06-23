@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='global-property-'>/**
+</span> * Created by Jasion on 15/2/7.
+ */
+
+<span id='global-property-'>/**
+</span> * 交互行为库
+ */
+define(['../uve/graphics', '../../lib/d3/d3'], function (graph) {
+
+<span id='Behavior'>    /**
+</span>     * 基础行为类，是所有行为的基类
+     *
+     * @class
+     */
+    function Behavior() {
+        var _id = 1;
+
+<span id='Behavior-method-id'>        /**
+</span>         * 获取当前行为对象的唯一ID，用于支持多重监听
+         */
+        this.id = function () {
+            if (this.__id__ == null) {
+                this.__id__ = _id ++;
+            }
+
+            return this.__id__;
+        };
+
+<span id='Behavior-method-toShapes'>        /**
+</span>         * 行为应用到一个或多个图形对象
+         *
+         * @param shapes     一个(Shape)或多个(Shape Array)图形对象
+         */
+        this.toShapes = function (shapes) {
+            // 由各子类实现
+        };
+    }
+
+<span id='Touch'>    /**
+</span>     * 点击行为类
+     *
+     * @class
+     * @extends Behavior
+     */
+    function Touch() {
+        var _click = null;
+        var _dbclick = null;
+        var _movein = null;
+        var _moveout = null;
+        var _moving = null;
+
+<span id='Touch-method-click'>        /**
+</span>         * 点击事件，包括鼠标单击及手指触控点击
+         *
+         * @param value     事件方法
+         */
+        this.click = function (value) {
+            if (value === undefined) {
+                return _click;
+            }
+            else {
+                _click = value;
+                return this;
+            }
+        };
+
+<span id='Touch-method-dbclick'>        /**
+</span>         * 双击事件，包括鼠标单击及手指触控点击
+         *
+         * @param value     事件方法
+         */
+        this.dbclick = function (value) {
+            if (value === undefined) {
+                return _dbclick;
+            }
+            else {
+                _dbclick = value;
+                return this;
+            }
+        };
+
+<span id='Touch-method-moveIn'>        /**
+</span>         * 移入事件（鼠标移入对象等）
+         *
+         * @param value     事件方法
+         */
+        this.moveIn = function (value) {
+            if (value === undefined) {
+                return _movein;
+            }
+            else {
+                _movein = value;
+                return this;
+            }
+        };
+
+<span id='Touch-method-moveOut'>        /**
+</span>         * 移出事件（鼠标移出对象位置等）
+         *
+         * @param value     事件方法
+         */
+        this.moveOut = function (value) {
+            if (value === undefined) {
+                return _moveout;
+            }
+            else {
+                _moveout = value;
+                return this;
+            }
+        };
+
+<span id='Touch-method-moving'>        /**
+</span>         * 移动事件（鼠标在对象上移动等）
+         *
+         * @param value     事件方法
+         */
+        this.moving = function (value) {
+            if (value === undefined) {
+                return _moving;
+            }
+            else {
+                _moving = value;
+                return this;
+            }
+        };
+
+        // @override
+        this.toShapes = function (shapes) {
+            var selection = graph.util.d3select(shapes);
+            if (_click != null) {
+                selection.on(&quot;click.ID&quot; + this.id(), function () {
+                    if (!d3.event.defaultPrevented) {
+                        _click.call(this.shape, d3.event.clientX, d3.event.clientY);
+                    }
+                });
+            }
+
+            if (_dbclick != null) {
+                selection.on(&quot;dblclick.ID&quot; + this.id(), function () {
+                    if (!d3.event.defaultPrevented) {
+                        _dbclick.call(this.shape, d3.event.clientX, d3.event.clientY);
+                    }
+                });
+            }
+
+            if (_movein != null) {
+                selection.on(&quot;mouseover.ID&quot; + this.id(), function () {
+                    if (!d3.event.defaultPrevented) {
+                        _movein.call(this.shape, d3.event.clientX, d3.event.clientY);
+                    }
+                });
+            }
+
+            if (_moveout != null) {
+                selection.on(&quot;mouseout.ID&quot; + this.id(), function () {
+                    if (!d3.event.defaultPrevented) {
+                        _moveout.call(this.shape, d3.event.clientX, d3.event.clientY);
+                    }
+                });
+            }
+
+            if (_moving != null) {
+                selection.on(&quot;mousemove.ID&quot; + this.id(), function () {
+                    if (!d3.event.defaultPrevented) {
+                        _moving.call(this.shape, d3.event.clientX, d3.event.clientY);
+                    }
+                });
+            }
+        };
+    }
+
+    Touch.prototype = new Behavior();
+    Touch.prototype.constructor = Touch;
+
+
+<span id='Drag'>    /**
+</span>     * 拖放行为类
+     *
+     * @class
+     * @extends Behavior
+     */
+    function Drag() {
+        var _dragBehavior = null;
+        var _dragStart = null;
+        var _dragMove = null;
+        var _dragEnd = null;
+
+<span id='Drag-method-dragStart'>        /**
+</span>         * 拖放开始事件
+         *
+         * @param value     事件方法
+         */
+        this.dragStart = function (value) {
+            if (value === undefined) {
+                return _dragStart;
+            }
+            else {
+                _dragStart = value;
+                return this;
+            }
+        };
+
+<span id='Drag-method-dragMove'>        /**
+</span>         * 拖放过程移动事件
+         *
+         * @param value     事件方法
+         */
+        this.dragMove = function (value) {
+            if (value === undefined) {
+                return _dragMove;
+            }
+            else {
+                _dragMove = value;
+                return this;
+            }
+        };
+
+<span id='Drag-method-dragEnd'>        /**
+</span>         * 拖放结束事件
+         *
+         * @param value     事件方法
+         */
+        this.dragEnd = function (value) {
+            if (value === undefined) {
+                return _dragEnd;
+            }
+            else {
+                _dragEnd = value;
+                return this;
+            }
+        };
+
+        // @override
+        this.toShapes = function (shapes) {
+            if (_dragBehavior == null) {
+                _dragBehavior = d3.behavior.drag();
+            }
+
+            if (_dragStart != null) {
+                _dragBehavior.on(&quot;dragstart.ID&quot; + this.id(), function () {
+                    var event = d3.event.sourceEvent;
+                    _dragStart.call(this.shape, event.clientX, event.clientY);
+                });
+            }
+            if (_dragMove != null) {
+                _dragBehavior.on(&quot;drag.ID&quot; + this.id(), function () {
+                    var event = d3.event.sourceEvent;
+                    _dragMove.call(this.shape, event.clientX, event.clientY);
+                });
+            }
+            if (_dragEnd != null) {
+                _dragBehavior.on(&quot;dragend.ID&quot; + this.id(), function () {
+                    var event = d3.event.sourceEvent;
+                    _dragEnd.call(this.shape, event.clientX, event.clientY);
+                });
+            }
+
+            var selection = graph.util.d3select(shapes);
+            selection.call(_dragBehavior);
+            return this;
+        };
+    }
+
+    Drag.prototype = new Behavior();
+    Drag.prototype.constructor = Drag;
+
+
+<span id='Zoom'>    /**
+</span>     * 缩放行为类
+     *
+     * @class
+     * @extends Behavior
+     */
+    function Zoom() {
+
+<span id='Zoom-method-zooming'>        /**
+</span>         * 缩放中事件
+         *
+         * @param value     事件方法
+         */
+        this.zooming = function (value) {
+
+        };
+    }
+
+    Zoom.prototype = new Behavior();
+    Zoom.prototype.constructor = Zoom;
+
+
+<span id='Rotate'>    /**
+</span>     * 旋转行为类
+     *
+     * @class
+     * @extends Behavior
+     */
+    function Rotate() {
+
+<span id='Rotate-method-rotating'>        /**
+</span>         * 旋转中事件
+         *
+         * @param value     事件方法
+         */
+        this.rotating = function (value) {
+
+        };
+    }
+
+    Rotate.prototype = new Behavior();
+    Rotate.prototype.constructor = Rotate;
+
+
+    return {
+        Touch: Touch,
+        Drag: Drag,
+        Zoom: Zoom,
+        Rotate: Rotate
+    };
+});</pre>
+</body>
+</html>

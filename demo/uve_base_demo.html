@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>UVE Base Demo</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0, minimum-scale=1.0, initial-scale=1" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta http-equiv="cache-control" content="no-store, must-revalidate" />
+    <link href="jquery-mobile/jquery.mobile.structure-1.0.css" rel="stylesheet" type="text/css" />
+    <link href="themes/yonyou.css" rel="stylesheet" type="text/css" />
+    <link href="themes/overrides.css" rel="stylesheet" type="text/css" />
+    <script src="jquery-mobile/jquery-1.6.4.js" type="text/javascript"></script>
+    <script src="jquery-mobile/jquery.mobile-1.0.js" type="text/javascript"></script>
+    <script src="../lib/d3/d3.js"></script>
+    <script src="../lib/require/require.js"></script>
+    <script src="js/script_executor.js" type="text/javascript"></script>
+</head>
+
+<body>
+
+<div data-role="page" id="uve_base_demo" data-title="UVE Base Demo">
+    <div data-role="header" style="position: fixed; left:0px; width:100%; height:34px; z-index: 12001">
+        <h1>UVE Base Demo</h1>
+        <div style="position: absolute; left:0px; top: 0px; width:100%; height:62px; background-image: url(images/navibar-home.png); background-size: 100% 45px"></div>
+        <div style="position: absolute; left:0px; top: 13px; width:100%;"><h3 style="text-align: center; color: white; text-shadow: black 0 -1px 0;">UVE基础功能演示</h3></div>
+        <div style="position: absolute; left:0px; top: 0px; width:65px; ">
+            <a href ="javascript:window.history.back();"><image src="images/back.png" style="height: 45px; border: none"></image></a>
+        </div>
+    </div>
+
+    <div data-role="content" style="height: 540px; background: #000 url(images/page_bg.jpg) no-repeat 50% 0px;">
+        <div data-role="controlgroup" data-type="horizontal" class="ui-footer ui-bar-a" id="action_ctrl"
+             style="top: 30px; margin: 0 auto; text-align: center; background: none;">
+            <a href="#" data-role="button">创建图形</a>
+            <a href="#" data-role="button">动画</a>
+            <a href="#" data-role="button">组合</a>
+            <a href="#" data-role="button">数据</a>
+            <a href="#" data-role="button">更新数据</a>
+        </div>
+
+        <div id="container" style="height: 400px; max-width: 600px; margin: 30px auto; border: 0px solid red; ">
+            <audio id="audio" src="images/tick.mp3">
+                Your browser does not support the audio element.   controls="controls"
+            </audio>
+        </div>
+
+    </div>
+
+    <div data-role="footer">
+        <div data-role="controlgroup" data-type="horizontal">
+            <a href="#home" data-role="button" data-icon="home">回到首页</a>
+            <a href="#contact_us" data-role="button" data-icon="grid">联系我们</a>
+        </div>
+        <h4>©2015 用友网络科技</h4>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='global-property-'>/**
+</span> * Created by Jasion on 15/1/10.
+ */
+
+<span id='global-property-'>/**
+</span> * 图形库模块
+ */
+define(['../../lib/d3/d3'], function () {
+
+    var _util = null;
+    var _domAttrMap = null;
+
+<span id='BaseObject'>    /**
+</span>     * 基础对象类，这是绝大部分类的基类，提供属性支持及枚举接口
+     *
+     * @class
+     */
+    function BaseObject() {
+
+<span id='BaseObject-method-init'>        /**
+</span>         * 初始化，在子类需要在构造函数中调用
+         */
+        this.init = function () {
+            this.__attrs__ = new Object();
+        };
+
+<span id='BaseObject-method-attr'>        /**
+</span>         * 设置/获取指定名称的属性
+         */
+        this.attr = function (name, value) {
+            //if (!arguments.length)
+            if (value === undefined) {
+                return this.__attrs__[name];
+            }
+            else {
+                this.__attrs__[name] = value;
+                return this;
+            }
+        };
+
+<span id='BaseObject-method-allAttrs'>        /**
+</span>         * 返回对象的所有属性的名称（数组）
+         */
+        this.allAttrs = function () {
+            return Object.keys(this.__attrs__);
+        };
+    }
+
+<span id='Util'>    /**
+</span>     * 全局公共方法类
+     *
+     * @class
+     */
+    function Util() {
+
+<span id='Util-method-parseColor'>        /**
+</span>         * 解析颜色值，支持透明度
+         */
+        this.parseColor = function (value) {
+            var color = null;
+            if (typeof(value) == &quot;string&quot; &amp;&amp; value.length == 9 &amp;&amp; value.charAt(0) == '#') {
+                // 含透明度，d3不支持
+                var alpha = parseInt(value.substr(1, 2), 16);
+                var color = d3.rgb(&quot;#&quot; + value.substr(3, 6));
+                color.a = alpha;
+            }
+            else {
+                color = d3.rgb(value);
+            }
+
+            return color;
+        };
+
+<span id='Util-method-d3select'>        /**
+</span>         * 选择传入的一个或多个图形对象，返回D3js选择集对象
+         *
+         * @param shapes    一个(Shape)或多个(Shape Array)图形对象
+         */
+        this.d3select = function (shapes) {
+            var result = null;
+            if (shapes instanceof Array) {
+                var nodes = [];
+                shapes.forEach(function (shape) {
+                    nodes.push(shape.node());
+                });
+                result = d3.selectAll(nodes);
+            }
+            else {
+                result = d3.select(shapes.node());
+            }
+
+            return result;
+        };
+
+<span id='Util-method-domAttrName'>        /**
+</span>         * 设置图形对象属性与相应HTML DOM属性的名称映射
+         *
+         * @param name      图形对象属性名称
+         * @param mapName   对应的DOM属性名称
+         */
+        this.domAttrName = function (name, mapName) {
+            if (mapName === undefined) {
+                var domAttr = _domAttrMap.get(name);
+                if (domAttr) {
+                    return domAttr;
+                }
+                else {
+                    return name;
+                }
+            }
+            else if (_domAttrMap.get(name) == null) {
+                _domAttrMap.set(name, mapName);
+            }
+        };
+    }
+
+
+<span id='GraphicsContext'>    /**
+</span>     * 绘图Context类，目前先实现支持SVG，日后看需要可扩展支持HTML5 Canvas
+     *
+     * @param container 图形画布所在的容器（一般是HTML的一个DIV）
+     * @param width     画布宽
+     * @param height    画布高
+     *
+     * @class
+     */
+    function GraphicsContext(container, width, height) {
+
+        var _width = width;
+        var _height = height;
+        var _root = null;
+        var _container = null;
+
+        // Initialize
+        if (container instanceof Array) {
+            // is d3 selection
+            _container = container.node();
+        }
+        else {
+            _container = container;
+        }
+
+
+        // Public Attributes getter / setter
+
+<span id='GraphicsContext-method-width'>        /**
+</span>         * 画布宽
+         */
+        this.width = function (value) {
+            if (!arguments.length) {
+                return _width;
+            }
+            else {
+                _width = value;
+                return this;
+            }
+        };
+
+<span id='GraphicsContext-method-height'>        /**
+</span>         * 画布高
+         */
+        this.height = function (value) {
+            if (!arguments.length) {
+                return _height;
+            }
+            else {
+                _height = value;
+                return this;
+            }
+        };
+
+<span id='GraphicsContext-method-root'>        /**
+</span>         * 根组，是所有图形和其它组的根，调用GraphicsContext.addShape添加的图形都是添加到该组
+         */
+        this.root = function () {
+            if (_root == null) {
+                _root = new Group();
+                _root.__gc__ = this;
+            }
+
+            return _root;
+        };
+
+<span id='GraphicsContext-method-container'>        /**
+</span>         * 返回所在的容器(DOM节点)
+         */
+        this.container = function () {
+            return _container;
+        };
+
+
+        // Public Methods
+
+<span id='GraphicsContext-method-addShape'>        /**
+</span>         * 添加图形，将添加到root组
+         *
+         * @param shape     图形对象, 包括图形组对象(Group)
+         */
+        this.addShape = function (shape) {
+            var root = this.root();
+            root.addShape(shape);
+            return this;
+        };
+
+<span id='GraphicsContext-method-shapes'>        /**
+</span>         * 返回直属（根组下）全部图形对象（数组）
+         */
+        this.shapes = function () {
+            return this.root().shapes();
+        };
+
+<span id='GraphicsContext-method-clearAll'>        /**
+</span>         * 清除全部内容（包括所有图形）
+         */
+        this.clearAll = function () {
+            this.root().clearAll();
+        };
+    }
+
+<span id='Shape'>    /**
+</span>     * 图形基础类，是Rect、Circle等所有图形的基类
+     *
+     * @class
+     * @extends BaseObject
+     */
+    function Shape() {
+
+<span id='Shape-method-init'>        /**
+</span>         * 初始化，在子类需要在构造函数中调用
+         *
+         * @override
+         */
+        this.init = function () {
+            Shape.prototype.init.call(this);
+            this.__node__ = null;
+            this.__group__ = null;
+        };
+
+        //==================================================================
+        // 所有图形的通用属性
+
+<span id='Shape-method-fill'>        /**
+</span>         * 填充颜色
+         */
+        this.fill = function (value) {
+            var color = _util.parseColor(value);
+            if (color.a) {
+                this.fillOpacity(color.a / 255);
+                value = color.toString();
+            }
+
+            return this.attr(&quot;fill&quot;, value);
+        };
+
+<span id='Shape-method-fillOpacity'>        /**
+</span>         * 填充透明度（0-1）
+         */
+        this.fillOpacity = function (value) {
+            _util.domAttrName(&quot;fillOpacity&quot;, &quot;fill-opacity&quot;);
+            return this.attr(&quot;fillOpacity&quot;, value);
+        };
+
+<span id='Shape-method-stroke'>        /**
+</span>         * 图形描边颜色
+         */
+        this.stroke = function (value) {
+            return this.attr(&quot;stroke&quot;, value);
+        };
+
+<span id='Shape-method-strokeWidth'>        /**
+</span>         * 图形描边宽度
+         */
+        this.strokeWidth = function (value) {
+            _util.domAttrName(&quot;strokeWidth&quot;, &quot;stroke-width&quot;);
+            return this.attr(&quot;strokeWidth&quot;, value);
+        };
+
+<span id='Shape-method-opacity'>        /**
+</span>         * 图形透明度（0-1）
+         */
+        this.opacity = function (value) {
+            return this.attr(&quot;opacity&quot;, value);
+        };
+        //==================================================================
+
+<span id='Shape-method-attr'>        /**
+</span>         * 设置/获取属性值
+         *
+         * @param name      属性名
+         * @param value     属性值
+         * @param keepDOM   是否保持DOM属性值不改变
+         *
+         * @override
+         */
+        this.attr = function (name, value, keepDOM) {
+            var result = Shape.prototype.attr.call(this, name, value);
+            if (!keepDOM &amp;&amp; value !== undefined) {
+                var node = this.node();
+                if (node) {
+                    this.domAttr(name, value);
+                }
+            }
+
+            return result;
+        };
+
+<span id='Shape-method-getAttr'>        /**
+</span>         * 获取指定名称的属性，支持默认值
+         *
+         * @param name          属性名称
+         * @param defaultValue  默认值
+         */
+        this.getAttr = function (name, defaultValue) {
+            var result = this.attr(name);
+            if (result === undefined) {
+                return defaultValue;
+            }
+            else {
+                return result;
+            }
+        };
+
+<span id='Shape-method-id'>        /**
+</span>         * 设置/获取Shape的ID
+         */
+        this.id = function (value) {
+            return this.attr(&quot;id&quot;, value);
+        };
+
+<span id='Shape-method-node'>        /**
+</span>         * 返回图形对象内部的DOM节点
+         */
+        this.node = function () {
+            return this.__node__;
+        };
+
+<span id='Shape-method-group'>        /**
+</span>         * 返回图形对象所在的组
+         */
+        this.group = function () {
+            return this.__group__;
+        };
+
+<span id='Shape-method-datum'>        /**
+</span>         * 将指定数据绑定到图形
+         *
+         * @param datum     数据项
+         */
+        this.datum = function (datum) {
+            var d3obj = d3.select(this.node());
+            return d3obj.datum.apply(d3obj, arguments);
+        };
+
+<span id='Shape-method-remove'>        /**
+</span>         * 移除当前图形
+         */
+        this.remove = function () {
+            var group = this.group();
+            if (group) {
+                group.removeShape(this);
+            }
+            else {
+                // is root
+                d3.select(this.node()).remove();
+            }
+        };
+
+<span id='Shape-method-scale'>        /**
+</span>         * 缩放倍数
+         */
+        this.scale = function (value) {
+            return this.attr(&quot;scale&quot;, value);
+        };
+
+<span id='Shape-method-translate'>        /**
+</span>         * 平移坐标
+         *
+         * @param value     平移值，如：-100,50，将向左移动100同时向下移动50
+         */
+        this.translate = function (value) {
+            var result = this.attr(&quot;translate&quot;, value);
+            if (value == undefined &amp;&amp; result &amp;&amp; result instanceof Array) {
+                // 避免外部意外修改值（因为数组是byRef）
+                result = [result[0], result[1]];
+            }
+            return result;
+        };
+
+<span id='Shape-method-rotate'>        /**
+</span>         * 旋转角度，以弧度为单位
+         */
+        this.rotate = function (value) {
+            return this.attr(&quot;rotate&quot;, value);
+        };
+
+<span id='Shape-method-skewX'>        /**
+</span>         * 沿X轴倾斜
+         */
+        this.skewX = function (value) {
+            return this.attr(&quot;skewX&quot;, value);
+        };
+
+<span id='Shape-method-skewY'>        /**
+</span>         * 沿Y轴倾斜
+         */
+        this.skewY = function (value) {
+            return this.attr(&quot;skewY&quot;, value);
+        };
+
+<span id='Shape-method-pointerEvents'>        /**
+</span>         * 禁用鼠标事件
+         *
+         * @param value
+         */
+        this.pointerEvents = function (value) {
+            _util.domAttrName(&quot;pointerEvents&quot;, &quot;pointer-events&quot;);
+            return this.attr(&quot;pointerEvents&quot;, value);
+        };
+
+<span id='Shape-method-cursor'>        /**
+</span>         * 图形上的光标类型，支持手型（值为hand）等
+         */
+        this.cursor = function (value) {
+            return this.attr(&quot;cursor&quot;, value);
+        };
+
+        this.mergeTransform = function (value) {
+            var scale = value == null ? this.scale() : value.scale;
+            var translate = value == null ? this.translate() : value.translate;
+            var rotate = value == null ? this.rotate() : value.rotate;
+            var skewX = value == null ? this.skewX() : value.skewX;
+            var skewY = value == null ? this.skewY() : value.skewY;
+
+            var transform = null;
+            if (translate) {
+                if (transform == null) {
+                    transform = &quot;translate(&quot; + translate + &quot;)&quot;;
+                }
+                else {
+                    transform += &quot; translate(&quot; + translate + &quot;)&quot;;
+                }
+            }
+            if (scale) {
+                if (transform == null) {
+                    transform = &quot;scale(&quot; + scale + &quot;)&quot;;
+                }
+                else {
+                    transform += &quot; scale(&quot; + scale + &quot;)&quot;;
+                }
+            }
+            if (rotate) {
+                if (transform == null) {
+                    transform = &quot;rotate(&quot; + rotate + &quot;)&quot;;
+                }
+                else {
+                    transform += &quot; rotate(&quot; + rotate + &quot;)&quot;;
+                }
+            }
+            if (skewX) {
+                if (transform == null) {
+                    transform = &quot;skewX(&quot; + skewX + &quot;)&quot;;
+                }
+                else {
+                    transform += &quot; skewX(&quot; + skewX + &quot;)&quot;;
+                }
+            }
+            if (skewY) {
+                if (transform == null) {
+                    transform = &quot;skewY(&quot; + skewY + &quot;)&quot;;
+                }
+                else {
+                    transform += &quot; skewY(&quot; + skewY + &quot;)&quot;;
+                }
+            }
+
+            return transform;
+        };
+
+<span id='Shape-method-hitTestShape'>        /**
+</span>         * 测试传入的位置坐标所在的图形
+         */
+        this.hitTestShape = function (x, y) {
+            var node = document.elementFromPoint(x, y);
+            if (node != null) {
+                return node.shape;
+            }
+
+            return null;
+        };
+
+<span id='Shape-method-bbox'>        /**
+</span>         * 返回图形边界盒
+         */
+        this.bbox = function () {
+            return this.node().getBBox();
+        };
+
+        this.domAttr = function (name, value) {
+            if (value !== undefined &amp;&amp; this.node()) {
+                if (name === &quot;text&quot;) {
+                    d3.select(this.node()).text(value);
+                }
+                else if (name == &quot;pointerEvents&quot;) {
+                    if (typeof value !== &quot;string&quot;) {
+                        value = value ? &quot;auto&quot; : &quot;none&quot;;
+                    }
+                    d3.select(this.node()).style(&quot;pointer-events&quot;, value);
+                }
+                else if (name == &quot;cursor&quot;) {
+                    if (value == &quot;hand&quot;) {
+                        // 手型光标，FF等浏览器中需要设为pointer
+                        value = &quot;pointer&quot;;
+                    }
+                    d3.select(this.node()).style(&quot;cursor&quot;, value);
+                }
+                else if (name == &quot;scale&quot; || name == &quot;translate&quot; || name == &quot;rotate&quot; ||
+                    name == &quot;skewX&quot; || name == &quot;skewY&quot;) {
+                    var transform = this.mergeTransform();
+                    d3.select(this.node()).attr(&quot;transform&quot;, transform);
+                }
+                else {
+                    var domAttrName = _util.domAttrName(name);
+                    d3.select(this.node()).attr(domAttrName, value);
+                }
+            }
+        };
+    }
+
+    Shape.prototype = new BaseObject();
+    Shape.prototype.constructor = Shape;
+
+<span id='Group'>    /**
+</span>     * 图形组类，将若干图形组合形成一个，方便整体移动、动画、以及设置颜色等属性
+     *
+     * @class
+     * @extends Shape
+     */
+    function Group() {
+
+        this.init = function () {
+            Group.prototype.init.call(this);
+            this.__shapes__ = [];
+        };
+
+
+<span id='Group-method-shapes'>         /**
+</span>         * 返回组中的全部图形对象（数组）
+         */
+        this.shapes = function () {
+            return this.__shapes__;
+        };
+
+<span id='Group-method-graphicsContext'>        /**
+</span>         * 返回图形Context
+         */
+        this.graphicsContext = function () {
+            return this.__gc__;
+        };
+
+        // @override，自动创建根组
+        this.node = function () {
+            if (this.__node__ == null) {
+                var gc = this.graphicsContext();
+                if (gc != null &amp;&amp; gc.container() != null) {
+                    // is root group
+                    var svg = d3.select(gc.container()).select(&quot;svg&quot;);
+                    if (svg.empty()) {
+                        svg = d3.select(gc.container()).append(&quot;svg&quot;);
+                        svg.attr(&quot;width&quot;, gc.width())
+                            .attr(&quot;height&quot;, gc.height())
+                            .attr(&quot;xmlns&quot;, &quot;http://www.w3.org/2000/svg&quot;);
+                        //.attr(&quot;xmlns:xlink&quot;, &quot;http://www.w3.org/1999/xlink&quot;);
+                        //.attr(&quot;version&quot;, &quot;1.1&quot;);
+                    }
+
+                    var root = svg.select(&quot;g#root&quot;);
+                    if (root.empty()) {
+                        root = svg.append(&quot;g&quot;).attr(&quot;id&quot;, &quot;root&quot;);
+                    }
+                    this.__node__ = root.node();
+                }
+            }
+
+            return this.__node__;
+        };
+
+<span id='Group-method-dataUpdate'>        /**
+</span>         * 更新现有数据项时触发的事件
+         *
+         * @param method    事件方法，支持三个参数：datum（数据项）、index（数据项序号）、shape（绑定此数据项的图形对象）
+         */
+        this.dataUpdate = function (method) {
+            if (method === undefined) {
+                return this.onDataUpdate;
+            }
+            else {
+                this.onDataUpdate = method;
+                return this;
+            }
+        };
+
+<span id='Group-method-dataEnter'>        /**
+</span>         * 新数据项进入时触发的事件
+         *
+         * @param method     事件方法，支持两个参数：datum（新数据项）、index（新数据项序号）
+         */
+        this.dataEnter = function (method) {
+            if (method === undefined) {
+                return this.onDataEnter;
+            }
+            else {
+                this.onDataEnter = method;
+                return this;
+            }
+        };
+
+<span id='Group-method-dataExit'>        /**
+</span>         * 旧数据项退出时触发的事件（旧数据项即更新数据时对比现有数据不再存在的数据项）
+         *
+         * @param method    事件方法，支持三个参数：datum（旧数据项）、index（旧数据项原序号）、shape（旧数据项绑定的图形对象）
+         */
+        this.dataExit = function (method) {
+            if (method === undefined) {
+                return this.onDataExit;
+            }
+            else {
+                this.onDataExit = method;
+                return this;
+            }
+        };
+
+<span id='Group-method-addShape'>        /**
+</span>         * 添加指定的图形对象到当前组
+         *
+         * @param shape     要添加的图形对象
+         * @param before    添加到那个对象前，为空将添加到末尾
+         */
+        this.addShape = function (shape, before) {
+            var parent = d3.select(this.node());
+            var obj = null;
+            if (shape instanceof Group) {
+                if (before == null) {
+                    obj = parent.append(&quot;g&quot;);
+                }
+                else {
+                    var beforeSelector = function () {
+                        return before.node();
+                    };
+                    obj = parent.insert(&quot;g&quot;, beforeSelector);
+                }
+            }
+            else if (shape instanceof Text) {
+                obj = parent.append(&quot;text&quot;)
+                    .text(shape.text());
+            }
+            else if (shape instanceof Image) {
+                obj = parent.append(&quot;image&quot;);
+            }
+            else if (shape instanceof Rect) {
+                obj = parent.append(&quot;rect&quot;);
+            }
+            else if (shape instanceof Circle) {
+                obj = parent.append(&quot;circle&quot;)
+            }
+            else if (shape instanceof Path || shape instanceof Arc) {
+                obj = parent.append(&quot;path&quot;);
+            }
+            else {
+                alert(&quot;Not support shape type!&quot;);
+            }
+
+            // 属性设置
+            if (obj) {
+                obj.node().shape = shape;
+                shape.__group__ = this;
+                shape.__node__ = obj.node();
+                this.__shapes__.push(shape);
+
+                var attrs = shape.allAttrs();
+                if (attrs) {
+                    attrs.forEach(function (name) {
+                        var value = shape.attr(name);
+                        if (value !== undefined) {
+                            shape.domAttr(name, value);
+                        }
+                    });
+                }
+            }
+
+            return this;
+        };
+
+<span id='Group-method-sendToBack'>        /**
+</span>         * 将当前组下的对象shape调整到对象toShape的后面
+         */
+        this.sendToBack = function (shape, toShape) {
+            if (shape.group() == toShape.group()) {
+                var node = shape.node();
+                var toNode = toShape.node();
+                this.node().insertBefore(node, toNode);
+            }
+
+            return this;
+        };
+
+<span id='Group-method-selectShape'>        /**
+</span>         * 根据指定查找规则查找图形，返回匹配的第一个图形
+         *
+         * @param pattern   查找规则，有效查找规则如：Rect(按类型), #id1(按ID), Rect#id1（指定类型指定ID）
+         */
+        this.selectShape = function (pattern) {
+            // valid pattern: rect, rect#id1, #id1
+            if (pattern) {
+                var fields = pattern.split(&quot;#&quot;);
+                var type = fields[0];
+                var id = fields.length &gt; 1 ? fields[1] : null;
+                var count = this.__shapes__.length;
+                for (var i = 0; i &lt; count; i++) {
+                    var shape = this.__shapes__[i];
+                    var shapeType = shape.constructor.name;
+                    if (type == null || type == &quot;&quot; || type == shapeType) {
+                        if (id == null || id == shape.id()) {
+                            return shape;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        };
+
+<span id='Group-method-selectShapes'>        /**
+</span>         * 根据指定查找规则查找所有符合条件的图形
+         *
+         * @param pattern   查找规则，有效查找规则如：Rect(按类型), #id1(按ID), Rect#id1（指定类型指定ID）
+         */
+        this.selectShapes = function (pattern) {
+            // valid pattern: rect, rect#id1, #id1
+            if (pattern) {
+                var fields = pattern.split(&quot;#&quot;);
+                var type = fields[0];
+                var id = fields.length &gt; 1 ? fields[1] : null;
+                var count = this.__shapes__.length;
+                var result = [];
+                for (var i = 0; i &lt; count; i++) {
+                    var shape = this.__shapes__[i];
+                    var shapeType = shape.constructor.name;
+                    if (type == null || type == &quot;&quot; || type == shapeType) {
+                        if (id == null || id == shape.id()) {
+                            result.push(shape);
+                        }
+                    }
+                }
+
+                return result;
+            }
+            else {
+                return this.__shapes__;
+            }
+        };
+
+<span id='Group-method-removeShape'>        /**
+</span>         * 移除指定的图形对象
+         */
+        this.removeShape = function (shape) {
+            var index = this.__shapes__.indexOf(shape);
+            if (index &gt;= 0) {
+                this.__shapes__.splice(index, 1);
+                d3.select(shape.node()).remove();
+            }
+        };
+
+<span id='Group-method-clearAll'>        /**
+</span>         * 清除组下全部图形
+         */
+        this.clearAll = function () {
+            d3.selectAll(this.node().childNodes).remove();
+            this.__shapes__ = [];
+        };
+
+<span id='Group-method-updateData'>        /**
+</span>         * 更新数据
+         *
+         * @param data      数据（数组形式，数组元素即为数据项）
+         * @param key       数据项的标识, 有效值包括：
+         *                  1. 函数：  自定义函数返回数据项ID
+         *                  2. 数字：  每个数据项也是一个数组，以数据项数组的此序号元素作为数据项标识
+         *                  3. 字符串：每个数据项是一个对象，以数据项对象的此名称属性值作为数据项标识
+         */
+        this.updateData = function (data, key) {
+            var updateSelection = null;
+            if (key != null) {
+                if (typeof key === &quot;function&quot;) {
+                    updateSelection = d3.selectAll(this.node().childNodes).data(data, key);
+                }
+                else {
+                    updateSelection = d3.selectAll(this.node().childNodes).data(data, function (d) {
+                        return d[key];    //datum ID
+                    });
+                }
+            }
+            else {
+                updateSelection = d3.selectAll(this.node().childNodes).data(data);
+            }
+
+            var enterSelection = updateSelection.enter();
+            var exitSelection = updateSelection.exit();
+            var group = this;
+
+            if (!updateSelection.empty()) {
+                updateSelection.each(function (d, i) {
+                    var node = this;
+                    if (node.shape != null) {
+                        group.onDataUpdate(d, i, node.shape);
+                    }
+                });
+            }
+
+            if (!enterSelection.empty()) {
+                var count = enterSelection[0].length;
+                for (var i = 0; i &lt; count; i++) {
+                    var node = enterSelection[0][i];
+                    if (node != null) {
+                        group.onDataEnter(node.__data__, i);
+                    }
+                }
+            }
+
+            if (!exitSelection.empty()) {
+                var count = exitSelection[0].length;
+                for (var i = 0; i &lt; count; i++) {
+                    var node = exitSelection[0][i];
+                    if (node != null &amp;&amp; node.shape != null) {
+                        group.onDataExit(node.__data__, i, node.shape);
+                    }
+                }
+            }
+
+            return this;
+        };
+
+
+        // initialize
+        this.init();
+    }
+
+    Group.prototype = new Shape();
+    Group.prototype.constructor = Group;
+
+<span id='Text'>    /**
+</span>     * 文本类（也按一种图形处理）
+     *
+     * @class
+     * @extends Shape
+     */
+    function Text(x, y, text) {
+
+<span id='Text-method-x'>        /**
+</span>         * x坐标
+         */
+        this.x = function (value) {
+            return this.attr(&quot;x&quot;, value);
+        };
+
+<span id='Text-method-y'>        /**
+</span>         * y坐标
+         */
+        this.y = function (value) {
+            return this.attr(&quot;y&quot;, value);
+        };
+
+<span id='Text-method-text'>        /**
+</span>         * 文本
+         */
+        this.text = function (value) {
+            return this.attr(&quot;text&quot;, value);
+        };
+
+<span id='Text-method-fontFamily'>        /**
+</span>         * 字体族
+         */
+        this.fontFamily = function (value) {
+            // &quot;Verdana, Arial, Serif&quot;;
+            _util.domAttrName(&quot;fontFamily&quot;, &quot;font-family&quot;);
+            return this.attr(&quot;fontFamily&quot;, value);
+        };
+
+<span id='Text-method-fontSize'>        /**
+</span>         * 字体大小
+         */
+        this.fontSize = function (value) {
+            _util.domAttrName(&quot;fontSize&quot;, &quot;font-size&quot;);
+            return this.attr(&quot;fontSize&quot;, value);
+        };
+
+<span id='Text-method-fontWeight'>        /**
+</span>         * 字体粗细，有效值包括：bold,normal
+         */
+        this.fontWeight = function (value) {
+            _util.domAttrName(&quot;fontWeight&quot;, &quot;font-weight&quot;);
+            return this.attr(&quot;fontWeight&quot;, value);
+        };
+
+<span id='Text-method-fontStyle'>        /**
+</span>         * 字体样式，有效值包括: italic, normal
+         */
+        this.fontStyle = function (value) {
+            _util.domAttrName(&quot;fontStyle&quot;, &quot;font-style&quot;);
+            return this.attr(&quot;fontStyle&quot;, value);
+        };
+
+<span id='Text-method-textAnchor'>        /**
+</span>         * 文字水平对齐位置，有效值包括：start, middle, end
+         */
+        this.textAnchor = function (value) {
+            _util.domAttrName(&quot;textAnchor&quot;, &quot;text-anchor&quot;);
+            return this.attr(&quot;textAnchor&quot;, value);
+        };
+
+<span id='Text-method-dominantBaseline'>        /**
+</span>         * 文字垂直对齐位置，有效值包括：start, middle, end
+         */
+        this.dominantBaseline = function (value) {
+            _util.domAttrName(&quot;dominantBaseline&quot;, &quot;dominant-baseline&quot;);
+            return this.attr(&quot;dominantBaseline&quot;, value);
+        };
+
+<span id='Text-method-textLength'>        /**
+</span>         * 文字宽度
+         */
+        this.textLength = function (value) {
+            return this.attr(&quot;textLength&quot;, value);
+        };
+
+<span id='Text-method-lengthAdjust'>        /**
+</span>         * 文字宽度对齐方式，有效值包括：spacingAndGlyphs, spacing
+         */
+        this.lengthAdjust = function (value) {
+            return this.attr(&quot;lengthAdjust&quot;, value);
+        };
+
+        this.dx = function (value) {
+            return this.attr(&quot;dx&quot;, value);
+        };
+
+        this.dy = function (value) {
+            return this.attr(&quot;dy&quot;, value);
+        };
+
+        // initialize
+        this.init();
+
+        this.x(x);
+        this.y(y);
+        this.text(text);
+    }
+
+    Text.prototype = new Shape();
+    Text.prototype.constructor = Text;
+
+<span id='Image'>    /**
+</span>     * 图像类
+     *
+     * @class
+     * @extends Shape
+     */
+    function Image(x, y, width, height, src) {
+
+<span id='Image-method-x'>        /**
+</span>         * x坐标
+         */
+        this.x = function (value) {
+            return this.attr(&quot;x&quot;, value);
+        };
+
+        this.y = function (value) {
+            return this.attr(&quot;y&quot;, value);
+        };
+
+        this.width = function (value) {
+            return this.attr(&quot;width&quot;, value);
+        };
+
+        this.height = function (value) {
+            return this.attr(&quot;height&quot;, value);
+        };
+
+        this.src = function (value) {
+            _util.domAttrName(&quot;src&quot;, &quot;xlink:href&quot;);
+            return this.attr(&quot;src&quot;, value);
+        };
+
+
+        // initialize
+        this.init();
+
+        this.x(x);
+        this.y(y);
+        this.width(width);
+        this.height(height);
+        this.src(src);
+    }
+
+    Image.prototype = new Shape();
+    Image.prototype.constructor = Image;
+
+<span id='Rect'>    /**
+</span>     * 矩形类
+     *
+     * @class
+     * @extends Shape
+     */
+    function Rect(x, y, width, height, rx, ry) {
+
+<span id='Rect-method-x'>        /**
+</span>         * x坐标
+         */
+        this.x = function (value) {
+            return this.attr(&quot;x&quot;, value);
+        };
+
+<span id='Rect-method-y'>        /**
+</span>         * y坐标
+         */
+        this.y = function (value) {
+            return this.attr(&quot;y&quot;, value);
+        };
+
+<span id='Rect-method-width'>        /**
+</span>         * 宽带
+         */
+        this.width = function (value) {
+            return this.attr(&quot;width&quot;, value);
+        };
+
+<span id='Rect-method-height'>        /**
+</span>         * 高度
+         */
+        this.height = function (value) {
+            return this.attr(&quot;height&quot;, value);
+        };
+
+<span id='Rect-method-rx'>        /**
+</span>         * 圆角rx
+         */
+        this.rx = function (value) {
+            return this.attr(&quot;rx&quot;, value);
+        };
+
+<span id='Rect-method-ry'>        /**
+</span>         * 圆角ry
+         */
+        this.ry = function (value) {
+            return this.attr(&quot;ry&quot;, value);
+        };
+
+
+        // initialize
+        this.init();
+
+        this.x(x);
+        this.y(y);
+        this.width(width);
+        this.height(height);
+        this.rx(rx);
+        this.ry(ry);
+    }
+
+    Rect.prototype = new Shape();
+    Rect.prototype.constructor = Rect;
+
+<span id='Circle'>    /**
+</span>     * 圆形
+     *
+     * @class
+     * @extends Shape
+     */
+    function Circle(cx, cy, r) {
+
+<span id='Circle-method-cx'>        /**
+</span>         * 圆心x坐标
+         */
+        this.cx = function (value) {
+            return this.attr(&quot;cx&quot;, value);
+        };
+
+<span id='Circle-method-cy'>        /**
+</span>         * 圆心y坐标
+         */
+        this.cy = function (value) {
+            return this.attr(&quot;cy&quot;, value);
+        };
+
+<span id='Circle-method-r'>        /**
+</span>         * 圆半径
+         */
+        this.r = function (value) {
+            return this.attr(&quot;r&quot;, value);
+        };
+
+
+        // initialize
+        this.init();
+
+        this.cx(cx);
+        this.cy(cy);
+        this.r(r);
+    }
+
+    Circle.prototype = new Shape();
+    Circle.prototype.constructor = Circle;
+
+<span id='Arc'>    /**
+</span>     * 扇形
+     *
+     * @class
+     * @extends Shape
+     */
+    function Arc(cx, cy, r, startAngle, endAngle) {
+
+<span id='Arc-method-cx'>        /**
+</span>         * 扇形圆心x坐标
+         */
+        this.cx = function (value) {
+            return this.attr(&quot;cx&quot;, value);
+        };
+
+<span id='Arc-method-cy'>        /**
+</span>         * 扇形圆心y坐标
+         */
+        this.cy = function (value) {
+            return this.attr(&quot;cy&quot;, value);
+        };
+
+<span id='Arc-method-r'>        /**
+</span>         * 扇形半径
+         */
+        this.r = function (value) {
+            return this.attr(&quot;r&quot;, value);
+        };
+
+<span id='Arc-method-startAngle'>        /**
+</span>         * 扇形起始角度
+         */
+        this.startAngle = function (value) {
+            return this.attr(&quot;startAngle&quot;, value);
+        };
+
+<span id='Arc-method-endAngle'>        /**
+</span>         * 扇形终止角度
+         */
+        this.endAngle = function (value) {
+            return this.attr(&quot;endAngle&quot;, value);
+        };
+
+<span id='Arc-method-path'>        /**
+</span>         * 扇形的路径数据
+         */
+        this.path = function (value) {
+            _util.domAttrName(&quot;path&quot;, &quot;d&quot;);
+            if (value === undefined) {
+                var arc = d3.svg.arc().outerRadius(this.r());
+                var result = arc({startAngle: this.startAngle(), endAngle: this.endAngle()});
+                return result;
+            }
+            else {
+                return this.attr(&quot;path&quot;, value);
+            }
+        };
+
+
+        // initialize
+        this.init();
+
+        this.cx(cx);
+        this.cy(cy);
+        this.r(r);
+        this.startAngle(startAngle);
+        this.endAngle(endAngle);
+    }
+
+    Arc.prototype = new Shape();
+    Arc.prototype.constructor = Arc;
+
+<span id='Path'>    /**
+</span>     * 路径
+     *
+     * @class
+     * @extends Shape
+     */
+    function Path(pathData) {
+
+        var _pathData = null;
+
+<span id='Path-method-path'>        /**
+</span>         * 路径数据
+         */
+        this.path = function (value) {
+            _util.domAttrName(&quot;path&quot;, &quot;d&quot;);
+            return this.attr(&quot;path&quot;, value);
+        };
+
+<span id='Path-method-beginPath'>        /**
+</span>         * 开始记录路径
+         */
+        this.beginPath = function () {
+            _pathData = &quot;&quot;;
+            return this;
+        };
+
+<span id='Path-method-moveTo'>        /**
+</span>         * 移动到指定位置
+         */
+        this.moveTo = function (x, y) {
+            _pathData += &quot;M&quot; + [x, y];
+            return this;
+        };
+
+<span id='Path-method-lineTo'>        /**
+</span>         * 划线到指定位置
+         */
+        this.lineTo = function (x, y) {
+            _pathData += &quot;L&quot; + [x, y];
+            return this;
+        };
+
+<span id='Path-method-lineToH'>        /**
+</span>         * 水平划线到指定位置
+         */
+        this.lineToH = function (x) {
+            _pathData += &quot;H&quot; + x;
+            return this;
+        };
+
+<span id='Path-method-lineToV'>        /**
+</span>         * 垂直划线到指定位置
+         */
+        this.lineToV = function (y) {
+            _pathData += &quot;V&quot; + y;
+            return this;
+        };
+
+<span id='Path-method-close'>        /**
+</span>         * 封闭路径
+         */
+        this.close = function () {
+            _pathData += &quot;Z&quot;;
+            return this;
+        };
+
+<span id='Path-method-endPath'>        /**
+</span>         * 终止记录路径，返回所记录的路径数据
+         *
+         * @param discard   是否丢弃所记录的路径数据（不应用到当前路径图形）
+         */
+        this.endPath = function (discard) {
+            if (_pathData &amp;&amp; !discard) {
+                this.path(_pathData);
+            }
+            return this;
+        };
+
+<span id='Path-method-lastPath'>        /**
+</span>         * 返回刚刚记录的路径数据
+         */
+        this.lastPath = function () {
+            return _pathData;
+        };
+
+        // initialize
+        this.init();
+        if (pathData != null) {
+            this.path(pathData);
+        }
+    }
+
+    Path.prototype = new Shape();
+    Path.prototype.constructor = Path;
+
+    // initialize
+    _util = new Util();
+    _domAttrMap = new d3.map();
+
+    return {
+        GraphicsContext: GraphicsContext,
+        BaseObject: BaseObject,
+        Shape: Shape,
+        Group: Group,
+        Text: Text,
+        Image: Image,
+        Rect: Rect,
+        Circle: Circle,
+        Arc: Arc,
+        Path: Path,
+
+        util: _util
+    };
+});</pre>
+</body>
+</html>
